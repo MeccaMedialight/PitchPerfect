@@ -1,0 +1,34 @@
+{
+  "name": "pitchperfect",
+  "version": "1.0.0",
+  "description": "A modern web application for creating beautiful presentations with rich media support that can run offline on iPad and other devices.",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "presentation",
+    "slides",
+    "pwa",
+    "offline",
+    "ipad",
+    "react",
+    "nodejs",
+    "express"
+  ],
+  "author": "MeccaMedialight",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
