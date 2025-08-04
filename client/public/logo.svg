@@ -1,0 +1,121 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient for the main singer -->
+    <linearGradient id="singerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient for listeners -->
+    <linearGradient id="listenerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient for background -->
+    <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:0.05" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Background -->
+  <circle cx="100" cy="100" r="95" fill="url(#bgGradient)" stroke="#667eea" stroke-width="2"/>
+  
+  <!-- Main singer (center) -->
+  <g id="singer">
+    <!-- Head -->
+    <circle cx="100" cy="70" r="15" fill="url(#singerGradient)"/>
+    
+    <!-- Body -->
+    <ellipse cx="100" cy="110" rx="12" ry="25" fill="url(#singerGradient)"/>
+    
+    <!-- Arms raised (singing pose) -->
+    <ellipse cx="85" cy="85" rx="8" ry="20" fill="url(#singerGradient)" transform="rotate(-30 85 85)"/>
+    <ellipse cx="115" cy="85" rx="8" ry="20" fill="url(#singerGradient)" transform="rotate(30 115 85)"/>
+    
+    <!-- Mouth open (singing) -->
+    <ellipse cx="100" cy="75" rx="4" ry="2" fill="#fff"/>
+    
+    <!-- Eyes -->
+    <circle cx="95" cy="67" r="2" fill="#fff"/>
+    <circle cx="105" cy="67" r="2" fill="#fff"/>
+  </g>
+  
+  <!-- Listeners (surrounding the singer) -->
+  <g id="listeners">
+    <!-- Listener 1 (top left) -->
+    <g transform="translate(40, 40)">
+      <circle cx="0" cy="0" r="8" fill="url(#listenerGradient)"/>
+      <ellipse cx="0" cy="15" rx="6" ry="12" fill="url(#listenerGradient)"/>
+      <ellipse cx="-8" cy="8" rx="4" ry="10" fill="url(#listenerGradient)" transform="rotate(-20 -8 8)"/>
+      <ellipse cx="8" cy="8" rx="4" ry="10" fill="url(#listenerGradient)" transform="rotate(20 8 8)"/>
+    </g>
+    
+    <!-- Listener 2 (top right) -->
+    <g transform="translate(160, 40)">
+      <circle cx="0" cy="0" r="8" fill="url(#listenerGradient)"/>
+      <ellipse cx="0" cy="15" rx="6" ry="12" fill="url(#listenerGradient)"/>
+      <ellipse cx="-8" cy="8" rx="4" ry="10" fill="url(#listenerGradient)" transform="rotate(-20 -8 8)"/>
+      <ellipse cx="8" cy="8" rx="4" ry="10" fill="url(#listenerGradient)" transform="rotate(20 8 8)"/>
+    </g>
+    
+    <!-- Listener 3 (bottom left) -->
+    <g transform="translate(40, 160)">
+      <circle cx="0" cy="0" r="8" fill="url(#listenerGradient)"/>
+      <ellipse cx="0" cy="15" rx="6" ry="12" fill="url(#listenerGradient)"/>
+      <ellipse cx="-8" cy="8" rx="4" ry="10" fill="url(#listenerGradient)" transform="rotate(-20 -8 8)"/>
+      <ellipse cx="8" cy="8" rx="4" ry="10" fill="url(#listenerGradient)" transform="rotate(20 8 8)"/>
+    </g>
+    
+    <!-- Listener 4 (bottom right) -->
+    <g transform="translate(160, 160)">
+      <circle cx="0" cy="0" r="8" fill="url(#listenerGradient)"/>
+      <ellipse cx="0" cy="15" rx="6" ry="12" fill="url(#listenerGradient)"/>
+      <ellipse cx="-8" cy="8" rx="4" ry="10" fill="url(#listenerGradient)" transform="rotate(-20 -8 8)"/>
+      <ellipse cx="8" cy="8" rx="4" ry="10" fill="url(#listenerGradient)" transform="rotate(20 8 8)"/>
+    </g>
+  </g>
+  
+  <!-- Musical notes emanating from singer -->
+  <g id="musicNotes">
+    <!-- Note 1 (top) -->
+    <g transform="translate(100, 40)">
+      <ellipse cx="0" cy="0" rx="3" ry="2" fill="#667eea"/>
+      <line x1="0" y1="2" x2="0" y2="12" stroke="#667eea" stroke-width="2"/>
+      <ellipse cx="0" cy="12" rx="2" ry="1" fill="#667eea"/>
+    </g>
+    
+    <!-- Note 2 (right) -->
+    <g transform="translate(160, 100)">
+      <ellipse cx="0" cy="0" rx="3" ry="2" fill="#f093fb"/>
+      <line x1="0" y1="2" x2="0" y2="12" stroke="#f093fb" stroke-width="2"/>
+      <ellipse cx="0" cy="12" rx="2" ry="1" fill="#f093fb"/>
+    </g>
+    
+    <!-- Note 3 (bottom) -->
+    <g transform="translate(100, 160)">
+      <ellipse cx="0" cy="0" rx="3" ry="2" fill="#667eea"/>
+      <line x1="0" y1="2" x2="0" y2="12" stroke="#667eea" stroke-width="2"/>
+      <ellipse cx="0" cy="12" rx="2" ry="1" fill="#667eea"/>
+    </g>
+    
+    <!-- Note 4 (left) -->
+    <g transform="translate(40, 100)">
+      <ellipse cx="0" cy="0" rx="3" ry="2" fill="#f093fb"/>
+      <line x1="0" y1="2" x2="0" y2="12" stroke="#f093fb" stroke-width="2"/>
+      <ellipse cx="0" cy="12" rx="2" ry="1" fill="#f093fb"/>
+    </g>
+  </g>
+  
+  <!-- Connection lines (showing people joining in) -->
+  <g id="connections" opacity="0.6">
+    <line x1="100" y1="70" x2="40" y2="40" stroke="#667eea" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="100" y1="70" x2="160" y2="40" stroke="#667eea" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="100" y1="70" x2="40" y2="160" stroke="#667eea" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="100" y1="70" x2="160" y2="160" stroke="#667eea" stroke-width="1" stroke-dasharray="3,3"/>
+  </g>
+  
+  <!-- App name -->
+  <text x="100" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#667eea">PitchPerfect</text>
+</svg> 

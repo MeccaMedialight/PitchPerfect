@@ -1,0 +1,252 @@
+.custom-layouts {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem 0;
+}
+
+.custom-layouts .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.custom-layouts .header {
+  text-align: center;
+  margin-bottom: 3rem;
+  color: white;
+}
+
+.custom-layouts .header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.custom-layouts .header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.custom-layouts .empty-state {
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  padding: 4rem 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.custom-layouts .empty-icon {
+  font-size: 4rem;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+.custom-layouts .empty-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.custom-layouts .empty-state p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.custom-layouts .layouts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.custom-layouts .layout-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.custom-layouts .layout-card:hover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.custom-layouts .layout-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #dee2e6;
+}
+
+.custom-layouts .layout-content h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.custom-layouts .layout-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.custom-layouts .slot-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.custom-layouts .slot-type-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #e9ecef;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.custom-layouts .slot-type-badge svg {
+  font-size: 0.7rem;
+}
+
+.custom-layouts .layout-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.custom-layouts .layout-actions .btn {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.custom-layouts .layout-actions .btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.custom-layouts .layout-actions .btn-primary:hover {
+  background: #5a6fd8;
+  transform: translateY(-1px);
+}
+
+.custom-layouts .layout-actions .btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.custom-layouts .layout-actions .btn-secondary:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.custom-layouts .layout-actions .btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.custom-layouts .layout-actions .btn-danger:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.custom-layouts .layout-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.custom-layouts .create-new {
+  text-align: center;
+}
+
+.custom-layouts .create-new .btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.custom-layouts .create-new .btn:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.custom-layouts .loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: white;
+}
+
+.custom-layouts .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.custom-layouts .spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .custom-layouts .layouts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .custom-layouts .header h1 {
+    font-size: 2rem;
+  }
+  
+  .custom-layouts .layout-actions {
+    flex-direction: column;
+  }
+} 

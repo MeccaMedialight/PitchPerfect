@@ -1,0 +1,284 @@
+.presentation-builder {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+}
+
+.presentation-builder.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+/* Header */
+.builder-header {
+  background: white;
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.presentation-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #333;
+  min-width: 300px;
+}
+
+.presentation-title:focus {
+  border-bottom: 2px solid #667eea;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Main Content */
+.builder-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 0;
+  height: calc(100vh - 80px);
+}
+
+/* Sidebar */
+.sidebar {
+  background: white;
+  border-right: 1px solid #e9ecef;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  margin-bottom: 2rem;
+}
+
+.sidebar-section h3 {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.slides-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.slide-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  background: white;
+  position: relative;
+}
+
+.slide-item.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #6c757d;
+  cursor: grab;
+  transition: color 0.3s ease;
+  flex-shrink: 0;
+}
+
+.drag-handle:hover {
+  color: #667eea;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.slide-item:hover {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.slide-item.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.slide-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.slide-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.slide-title {
+  font-weight: 500;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slide-type {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.delete-slide {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.slide-item:hover .delete-slide {
+  opacity: 1;
+}
+
+.slide-item.active .delete-slide {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Main Editor */
+.editor-main {
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-toolbar {
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.editor-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+
+
+
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .builder-content {
+    grid-template-columns: 200px 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .builder-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
+    max-height: 200px;
+  }
+  
+  .builder-header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .header-left {
+    width: 100%;
+  }
+  
+  .presentation-title {
+    min-width: auto;
+    flex: 1;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Loading states */
+.loading-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #666;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 

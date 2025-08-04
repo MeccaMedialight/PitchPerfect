@@ -1,0 +1,272 @@
+.media-upload-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.media-upload-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.upload-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.upload-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.close-btn:hover {
+  background: #f8f9fa;
+}
+
+.upload-area {
+  padding: 2rem;
+  flex: 1;
+}
+
+.dropzone {
+  border: 2px dashed #ddd;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
+}
+
+.dropzone:hover {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.dropzone.active {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.dropzone.uploading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.upload-prompt {
+  color: #666;
+}
+
+.upload-icon {
+  font-size: 4rem;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+.upload-prompt h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.upload-prompt p {
+  margin: 0 0 1rem 0;
+  color: #666;
+}
+
+.upload-info {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.upload-info p {
+  margin: 0.25rem 0;
+}
+
+.upload-warning {
+  color: #856404 !important;
+  background: #fff3cd;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ffeaa7;
+  margin-top: 1rem !important;
+}
+
+/* Upload Progress */
+.upload-progress {
+  color: #333;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+}
+
+/* File Lists */
+.accepted-files,
+.rejected-files {
+  padding: 0 2rem 1rem;
+}
+
+.accepted-files h4,
+.rejected-files h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f8f9fa;
+  margin-bottom: 0.5rem;
+}
+
+.file-item.error {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+}
+
+.file-icon {
+  font-size: 1.5rem;
+  color: #667eea;
+}
+
+.file-item.error .file-icon {
+  color: #dc3545;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.file-size {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.file-error {
+  font-size: 0.8rem;
+  color: #dc3545;
+}
+
+.upload-error {
+  padding: 1rem 2rem;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  margin: 0 2rem 1rem 2rem;
+  color: #721c24;
+}
+
+.upload-error p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.cancel-upload-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-upload-btn:hover {
+  background: #c82333;
+}
+
+.upload-progress {
+  text-align: center;
+}
+
+.upload-progress p {
+  margin: 1rem 0;
+  font-weight: 500;
+}
+
+/* Upload Actions */
+.upload-actions {
+  padding: 1.5rem;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .media-upload-content {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .upload-area {
+    padding: 1rem;
+  }
+  
+  .dropzone {
+    padding: 2rem 1rem;
+  }
+  
+  .upload-icon {
+    font-size: 3rem;
+  }
+  
+  .upload-prompt h3 {
+    font-size: 1.2rem;
+  }
+} 
