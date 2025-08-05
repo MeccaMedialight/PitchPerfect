@@ -6,13 +6,13 @@ const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
 const JSZip = require('jszip');
 const axios = require('axios');
+const config = require('./config/config');
 
 const app = express();
-const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: config.CORS_ORIGINS,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -1979,8 +1979,8 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(config.PORT, () => {
+  console.log(`Server running on port ${config.PORT}`);
 }).on('error', (error) => {
   console.error('Server error:', error);
 });

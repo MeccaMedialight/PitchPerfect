@@ -15,7 +15,9 @@ const CustomLayouts = () => {
 
   const loadLayouts = () => {
     try {
+      console.log('CustomLayouts: Loading layouts...');
       const savedLayouts = JSON.parse(localStorage.getItem('slideLayouts') || '[]');
+      console.log('CustomLayouts: Found layouts:', savedLayouts);
       setLayouts(savedLayouts);
       setLoading(false);
     } catch (error) {
@@ -156,6 +158,56 @@ const CustomLayouts = () => {
             <Link to="/layout-designer" className="btn btn-primary">
               <FaPencilRuler /> Create Layout
             </Link>
+            <button 
+              onClick={() => {
+                console.log('Creating test layout from CustomLayouts page...');
+                const testLayout = {
+                  id: `layout-${Date.now()}`,
+                  name: 'Test Custom Layout',
+                  slots: [
+                    {
+                      id: 'slot-1',
+                      type: 'text',
+                      position: { x: 50, y: 50 },
+                      size: { width: 200, height: 150 },
+                      content: 'Test text slot'
+                    },
+                    {
+                      id: 'slot-2', 
+                      type: 'image',
+                      position: { x: 300, y: 50 },
+                      size: { width: 200, height: 150 },
+                      content: ''
+                    },
+                    {
+                      id: 'slot-3',
+                      type: 'video', 
+                      position: { x: 50, y: 250 },
+                      size: { width: 200, height: 150 },
+                      content: ''
+                    }
+                  ],
+                  createdAt: new Date().toISOString()
+                };
+                
+                const savedLayouts = JSON.parse(localStorage.getItem('slideLayouts') || '[]');
+                savedLayouts.push(testLayout);
+                localStorage.setItem('slideLayouts', JSON.stringify(savedLayouts));
+                console.log('Test layout created from CustomLayouts page');
+                loadLayouts();
+              }}
+              style={{ 
+                marginTop: '10px', 
+                padding: '8px 16px', 
+                backgroundColor: '#28a745', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Create Test Layout
+            </button>
           </motion.div>
         ) : (
           <div className="layouts-grid">

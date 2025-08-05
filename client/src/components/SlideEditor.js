@@ -1,6 +1,8 @@
 import React, { useState, memo, useCallback } from 'react';
 import { FaImage, FaVideo, FaFileAlt, FaUser, FaEye } from 'react-icons/fa';
+import config from '../config/config';
 import LayoutPreviewPopup from './LayoutPreviewPopup';
+import RichTextEditor from './RichTextEditor';
 import './SlideEditor.css';
 
 const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
@@ -307,23 +309,35 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
                     zIndex: 1
                   }}
                                  >
-                   {slot.content ? (
-                     slot.type === 'image' ? (
-                       <img src={slot.content} alt="Slot content" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                     ) : slot.type === 'video' ? (
-                       <video controls style={{ width: '100%', height: '100%' }}>
-                         <source src={slot.content} type="video/mp4" />
-                       </video>
-                     ) : slot.type === 'text' ? (
-                       <div style={{ fontSize: '0.7rem', lineHeight: '1.1', padding: '2px', overflow: 'hidden' }}>
-                         {slot.content.substring(0, 50)}{slot.content.length > 50 ? '...' : ''}
-                       </div>
-                     ) : (
-                       slot.type
-                     )
-                   ) : (
-                     slot.type
-                   )}
+                                       {slot.content ? (
+                      slot.type === 'image' ? (
+                        <img src={slot.content} alt="Slot content" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : slot.type === 'video' ? (
+                        <video 
+                          controls 
+                          autoPlay={slot.autoplay || false}
+                          muted={slot.muted || false}
+                          style={{ width: '100%', height: '100%' }}
+                        >
+                          <source src={slot.content} type="video/mp4" />
+                        </video>
+                      ) : slot.type === 'text' ? (
+                        <div 
+                          style={{ 
+                            fontSize: '0.7rem', 
+                            lineHeight: '1.1', 
+                            padding: '2px', 
+                            overflow: 'hidden',
+                            textAlign: 'left'
+                          }}
+                          dangerouslySetInnerHTML={{ __html: slot.content }}
+                        />
+                      ) : (
+                        slot.type
+                      )
+                    ) : (
+                      slot.type
+                    )}
                  </div>
               );
             })}
@@ -347,96 +361,140 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
                 )}
               </div>
               
-              {slot.type === 'text' ? (
-                <textarea
-                  value={slot.content || ''}
-                  onChange={(e) => updateSlotContent(slot.id, e.target.value)}
-                  placeholder={`Enter ${slot.type} content...`}
-                  className="form-textarea"
-                  rows={3}
-                />
-              ) : (slot.type === 'image' || slot.type === 'video') ? (
-                <div className="media-input-group">
-                  <div className="input-tabs">
-                    <button 
-                      className={`tab-btn ${!slot.content?.startsWith('http') ? 'active' : ''}`}
-                      onClick={() => {
-                        const fileInput = document.getElementById(`file-input-${slot.id}`);
-                        if (fileInput) fileInput.click();
-                      }}
-                    >
-                      Upload File
-                    </button>
-                    <button 
-                      className={`tab-btn ${slot.content?.startsWith('http') ? 'active' : ''}`}
-                      onClick={() => {
-                        const urlInput = document.getElementById(`url-input-${slot.id}`);
-                        if (urlInput) urlInput.focus();
-                      }}
-                    >
-                      URL
-                    </button>
-                  </div>
-                  
-                  <input
-                    id={`file-input-${slot.id}`}
-                    type="file"
-                    accept={slot.type === 'image' ? 'image/*' : 'video/*'}
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        
-                        fetch('http://localhost:5001/api/upload', {
-                          method: 'POST',
-                          body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                          if (data.success) {
-                            updateSlotContent(slot.id, data.file.url);
-                          } else {
-                            alert('Upload failed: ' + (data.error || 'Unknown error'));
-                          }
-                        })
-                        .catch(error => {
-                          console.error('Upload error:', error);
-                          alert('Upload failed: ' + error.message);
-                        });
-                      }
-                    }}
-                    style={{ display: 'none' }}
-                  />
-                  
-                  <input
-                    id={`url-input-${slot.id}`}
-                    type="text"
-                    value={slot.content || ''}
-                    onChange={(e) => updateSlotContent(slot.id, e.target.value)}
-                    placeholder={`Enter ${slot.type} URL...`}
-                    className="form-input"
-                  />
-                  
-                  {slot.content && (
-                    <div className="media-preview">
-                      {slot.type === 'image' ? (
-                        <img 
-                          src={slot.content} 
-                          alt="Preview" 
-                          style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'cover' }} 
-                        />
-                      ) : (
-                        <video 
-                          controls 
-                          style={{ maxWidth: '100%', maxHeight: '100px' }}
-                        >
-                          <source src={slot.content} type="video/mp4" />
-                        </video>
-                      )}
-                    </div>
-                  )}
-                </div>
+                             {slot.type === 'text' ? (
+                 <RichTextEditor
+                   value={slot.content || ''}
+                   onChange={(content) => updateSlotContent(slot.id, content)}
+                   placeholder={`Enter ${slot.type} content...`}
+                   className="slot-rich-text-editor"
+                 />
+                             ) : (slot.type === 'image' || slot.type === 'video') ? (
+                 <div className="media-input-group">
+                   <div className="input-tabs">
+                     <button 
+                       className={`tab-btn ${!slot.content?.startsWith('http') ? 'active' : ''}`}
+                       onClick={() => {
+                         const fileInput = document.getElementById(`file-input-${slot.id}`);
+                         if (fileInput) fileInput.click();
+                       }}
+                     >
+                       Upload File
+                     </button>
+                     <button 
+                       className={`tab-btn ${slot.content?.startsWith('http') ? 'active' : ''}`}
+                       onClick={() => {
+                         const urlInput = document.getElementById(`url-input-${slot.id}`);
+                         if (urlInput) urlInput.focus();
+                       }}
+                     >
+                       URL
+                     </button>
+                   </div>
+                   
+                   <input
+                     id={`file-input-${slot.id}`}
+                     type="file"
+                     accept={slot.type === 'image' ? 'image/*' : 'video/*'}
+                     onChange={(e) => {
+                       const file = e.target.files[0];
+                       if (file) {
+                         const formData = new FormData();
+                         formData.append('file', file);
+                         
+                         fetch(config.getApiUrl(config.UPLOAD_ENDPOINT), {
+                           method: 'POST',
+                           body: formData
+                         })
+                         .then(response => response.json())
+                         .then(data => {
+                           if (data.success) {
+                             updateSlotContent(slot.id, config.getServerUrl(data.file.url));
+                           } else {
+                             alert('Upload failed: ' + (data.error || 'Unknown error'));
+                           }
+                         })
+                         .catch(error => {
+                           console.error('Upload error:', error);
+                           alert('Upload failed: ' + error.message);
+                         });
+                       }
+                     }}
+                     style={{ display: 'none' }}
+                   />
+                   
+                   <input
+                     id={`url-input-${slot.id}`}
+                     type="text"
+                     value={slot.content || ''}
+                     onChange={(e) => updateSlotContent(slot.id, e.target.value)}
+                     placeholder={`Enter ${slot.type} URL...`}
+                     className="form-input"
+                   />
+                   
+                   {slot.type === 'video' && slot.content && (
+                     <div className="video-options">
+                       <div className="option-group">
+                         <label className="checkbox-label">
+                           <input
+                             type="checkbox"
+                             checked={slot.autoplay || false}
+                             onChange={(e) => {
+                               const updatedSlots = localSlide.layoutSlots.map(s =>
+                                 s.id === slot.id ? { ...s, autoplay: e.target.checked } : s
+                               );
+                               const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
+                               setLocalSlide(updatedSlide);
+                               if (onImmediateUpdate) {
+                                 onImmediateUpdate(updatedSlide);
+                               }
+                               onUpdate(updatedSlide);
+                             }}
+                           />
+                           <span>Autoplay</span>
+                         </label>
+                         <label className="checkbox-label">
+                           <input
+                             type="checkbox"
+                             checked={slot.muted || false}
+                             onChange={(e) => {
+                               const updatedSlots = localSlide.layoutSlots.map(s =>
+                                 s.id === slot.id ? { ...s, muted: e.target.checked } : s
+                               );
+                               const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
+                               setLocalSlide(updatedSlide);
+                               if (onImmediateUpdate) {
+                                 onImmediateUpdate(updatedSlide);
+                               }
+                               onUpdate(updatedSlide);
+                             }}
+                           />
+                           <span>Muted</span>
+                         </label>
+                       </div>
+                     </div>
+                   )}
+                   
+                   {slot.content && (
+                     <div className="media-preview">
+                       {slot.type === 'image' ? (
+                         <img 
+                           src={slot.content} 
+                           alt="Preview" 
+                           style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'cover' }} 
+                         />
+                       ) : (
+                         <video 
+                           controls 
+                           autoPlay={slot.autoplay || false}
+                           muted={slot.muted || false}
+                           style={{ maxWidth: '100%', maxHeight: '100px' }}
+                         >
+                           <source src={slot.content} type="video/mp4" />
+                         </video>
+                       )}
+                     </div>
+                   )}
+                 </div>
               ) : (
                 <input
                   type="text"

@@ -2,6 +2,7 @@ import React, { useCallback, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FaCloudUploadAlt, FaImage, FaVideo, FaTimes, FaStop } from 'react-icons/fa';
 import axios from 'axios';
+import config from '../config/config';
 import './MediaUpload.css';
 
 const MediaUpload = ({ onUpload, onClose }) => {
@@ -41,7 +42,7 @@ const MediaUpload = ({ onUpload, onClose }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post('http://localhost:5001/api/upload', formData, {
+      const response = await axios.post(config.getApiUrl(config.UPLOAD_ENDPOINT), formData, {
         signal: abortControllerRef.current.signal,
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -59,7 +60,7 @@ const MediaUpload = ({ onUpload, onClose }) => {
       });
 
       const mediaFile = {
-        url: `http://localhost:5001${response.data.file.url}`,
+        url: config.getServerUrl(response.data.file.url),
         type: file.type,
         name: file.name,
         size: file.size,

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaPlay, FaEye, FaBusinessTime, FaRocket, FaVideo } from 'react-icons/fa';
 import axios from 'axios';
+import config from '../config/config';
 import './TemplateSelector.css';
 
 const TemplateSelector = () => {
@@ -16,7 +17,7 @@ const TemplateSelector = () => {
 
   const fetchTemplates = async () => {
     try {
-      const response = await axios.get('http://localhost:5001/api/templates');
+      const response = await axios.get(config.getApiUrl(config.TEMPLATES_ENDPOINT));
       setTemplates(response.data);
       setLoading(false);
     } catch (err) {

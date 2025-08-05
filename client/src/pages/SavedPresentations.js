@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { FaEye, FaDownload, FaTrash, FaPlus, FaFileAlt, FaImage, FaVideo, FaEdit, FaCopy } from 'react-icons/fa';
+import config from '../config/config';
 import './SavedPresentations.css';
 
 const SavedPresentations = () => {
@@ -21,7 +22,7 @@ const SavedPresentations = () => {
   const loadPresentations = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5001/api/presentations');
+      const response = await axios.get(config.getApiUrl(config.PRESENTATIONS_ENDPOINT));
       setPresentations(response.data);
       setError(null);
     } catch (err) {
@@ -37,12 +38,12 @@ const SavedPresentations = () => {
       setExporting(prev => ({ ...prev, [presentationId]: true }));
       
       // First get the presentation data
-      const response = await axios.get(`http://localhost:5001/api/presentations/${presentationId}`);
+      const response = await axios.get(config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentationId}`));
       const presentationData = response.data;
       
       // Then generate the export
       const exportResponse = await axios.post(
-        `http://localhost:5001/api/presentations/${presentationId}/generate`,
+        config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentationId}/generate`),
         presentationData,
         {
           responseType: 'blob',
@@ -75,7 +76,7 @@ const SavedPresentations = () => {
 
     try {
       setDeleting(prev => ({ ...prev, [presentationId]: true }));
-      await axios.delete(`http://localhost:5001/api/presentations/${presentationId}`);
+      await axios.delete(config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentationId}`));
       setPresentations(prev => prev.filter(p => p.id !== presentationId));
     } catch (err) {
       console.error('Error deleting presentation:', err);
@@ -90,7 +91,7 @@ const SavedPresentations = () => {
       setDuplicating(prev => ({ ...prev, [presentationId]: true }));
       
       // Get the original presentation
-      const response = await axios.get(`http://localhost:5001/api/presentations/${presentationId}`);
+      const response = await axios.get(config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentationId}`));
       const originalPresentation = response.data;
       
       // Create a new presentation with copied data
@@ -102,7 +103,7 @@ const SavedPresentations = () => {
       };
       
       // Save the duplicated presentation
-      const saveResponse = await axios.post('http://localhost:5001/api/presentations', duplicatedPresentation);
+      const saveResponse = await axios.post(config.getApiUrl(config.PRESENTATIONS_ENDPOINT), duplicatedPresentation);
       
       // Reload presentations to show the new copy
       await loadPresentations();

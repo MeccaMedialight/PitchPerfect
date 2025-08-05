@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaTimes, FaChevronLeft, FaChevronRight, FaPlay, FaPause } from 'react-icons/fa';
 import SlidePreview from './SlidePreview';
-import './IPadPreview.css';
+import styles from './IPadPreview.module.css';
 
 const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onSlideChange }) => {
   const [currentSlide, setCurrentSlide] = React.useState(currentSlideIndex);
@@ -81,14 +81,14 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
   const currentSlideData = presentation.slides[currentSlide];
 
   return (
-    <div className="ipad-preview-overlay">
-      <div className="ipad-preview-container">
+    <div className={styles.ipadPreviewOverlay}>
+      <div className={styles.ipadPreviewContainer}>
         {/* iPad Frame */}
-        <div className="ipad-frame">
+        <div className={styles.ipadFrame}>
           {/* iPad Screen */}
-          <div className="ipad-screen">
+          <div className={styles.ipadScreen}>
             {/* Presentation Content */}
-            <div className="presentation-viewport">
+            <div className={styles.presentationViewport}>
               <SlidePreview
                 slide={currentSlideData}
                 isActive={true}
@@ -100,10 +100,10 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
         </div>
 
         {/* Controls */}
-        <div className="ipad-controls">
-          <div className="control-group">
+        <div className={styles.ipadControls}>
+          <div className={styles.controlGroup}>
             <button 
-              className="control-btn"
+              className={styles.controlBtn}
               onClick={handlePrevious}
               disabled={currentSlide === 0}
             >
@@ -111,14 +111,14 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
             </button>
             
             <button 
-              className="control-btn play-btn"
+              className={`${styles.controlBtn} ${styles.playBtn}`}
               onClick={() => setIsPlaying(!isPlaying)}
             >
               {isPlaying ? <FaPause /> : <FaPlay />}
             </button>
             
             <button 
-              className="control-btn"
+              className={styles.controlBtn}
               onClick={handleNext}
               disabled={currentSlide === presentation.slides.length - 1}
             >
@@ -126,18 +126,18 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
             </button>
           </div>
           
-          <div className="slide-indicator">
+          <div className={styles.slideIndicator}>
             {currentSlide + 1} / {presentation.slides.length}
           </div>
         </div>
 
         {/* Close Button */}
-        <button className="close-btn" onClick={onClose}>
+        <button className={styles.closeBtn} onClick={onClose}>
           <FaTimes />
         </button>
 
         {/* Instructions */}
-        <div className="preview-instructions">
+        <div className={styles.previewInstructions}>
           <p>Use arrow keys to navigate • Space to play/pause • Esc to close</p>
         </div>
       </div>

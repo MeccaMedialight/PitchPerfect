@@ -151,13 +151,69 @@ const SlideLayoutDesigner = () => {
 
   // Check if we're editing an existing layout
   useEffect(() => {
+    console.log('SlideLayoutDesigner useEffect running...');
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('edit');
+    console.log('Edit ID from URL:', editId);
     
     if (editId) {
+      console.log('Loading layout for editing:', editId);
       loadLayoutForEditing(editId);
+    } else {
+      // Create a test layout if no layouts exist
+      const savedLayouts = JSON.parse(localStorage.getItem('slideLayouts') || '[]');
+      console.log('Found saved layouts:', savedLayouts.length);
+      if (savedLayouts.length === 0) {
+        console.log('No layouts found, creating test layout...');
+        createTestLayout();
+      } else {
+        console.log('Layouts already exist, not creating test layout');
+      }
     }
   }, []);
+
+  const createTestLayout = () => {
+    console.log('Creating test layout...');
+    const testLayout = {
+      id: `layout-${Date.now()}`,
+      name: 'Test Custom Layout',
+      slots: [
+        {
+          id: 'slot-1',
+          type: 'text',
+          position: { x: 50, y: 50 },
+          size: { width: 200, height: 150 },
+          content: 'Test text slot'
+        },
+        {
+          id: 'slot-2', 
+          type: 'image',
+          position: { x: 300, y: 50 },
+          size: { width: 200, height: 150 },
+          content: ''
+        },
+        {
+          id: 'slot-3',
+          type: 'video', 
+          position: { x: 50, y: 250 },
+          size: { width: 200, height: 150 },
+          content: ''
+        }
+      ],
+      createdAt: new Date().toISOString()
+    };
+    
+    const savedLayouts = JSON.parse(localStorage.getItem('slideLayouts') || '[]');
+    console.log('Current saved layouts:', savedLayouts);
+    savedLayouts.push(testLayout);
+    localStorage.setItem('slideLayouts', JSON.stringify(savedLayouts));
+    console.log('Test layout saved. Total layouts:', savedLayouts.length);
+    
+    // Load the test layout for editing
+    setSlots(testLayout.slots);
+    setLayoutName(testLayout.name);
+    setEditingLayoutId(testLayout.id);
+  };
 
   const loadLayoutForEditing = (layoutId) => {
     try {
@@ -184,14 +240,36 @@ const SlideLayoutDesigner = () => {
     const maxX = slideWidth - slotWidth - padding;
     const maxY = slideHeight - slotHeight - padding;
     
-    // Start with a more predictable position - place first slot in center
+    // Create a more predictable grid-based positioning system
     let x, y;
+    const gridCols = 3;
+    const gridRows = 2;
+    const colWidth = (slideWidth - padding * 2) / gridCols;
+    const rowHeight = (slideHeight - padding * 2) / gridRows;
+    
     if (slots.length === 0) {
+      // First slot in center
       x = (slideWidth - slotWidth) / 2;
       y = (slideHeight - slotHeight) / 2;
     } else {
-      x = padding + (slots.length * 60) % (maxX - padding);
-      y = padding + (slots.length * 50) % (maxY - padding);
+      // Use grid positioning for predictable placement
+      const gridIndex = slots.length - 1;
+      const col = gridIndex % gridCols;
+      const row = Math.floor(gridIndex / gridCols);
+      
+      x = padding + (col * colWidth) + (colWidth - slotWidth) / 2;
+      y = padding + (row * rowHeight) + (rowHeight - slotHeight) / 2;
+      
+      // If we exceed the grid, use a spiral pattern
+      if (gridIndex >= gridCols * gridRows) {
+        const spiralIndex = gridIndex - (gridCols * gridRows);
+        const angle = spiralIndex * Math.PI / 4;
+        const radius = 150 + spiralIndex * 30;
+        const centerX = slideWidth / 2;
+        const centerY = slideHeight / 2;
+        x = centerX + Math.cos(angle) * radius;
+        y = centerY + Math.sin(angle) * radius;
+      }
     }
     
     // Ensure minimum distance from edges
@@ -206,6 +284,9 @@ const SlideLayoutDesigner = () => {
       content: type === SlotType.TEXT ? 'Enter text here...' : '',
       style: {}
     };
+    
+    console.log(`Adding slot ${type} at position (${x}, ${y}) with size (${slotWidth}, ${slotHeight})`);
+    console.log('Current slots:', slots.length);
     
     setSlots(prevSlots => [...prevSlots, newSlot]);
   };
@@ -501,10 +582,24 @@ const SlideLayoutDesigner = () => {
             </button>
           </div>
           
-          <div className="layout-info">
-            <p>Slots: {slots.length}</p>
-            <p>Drag slots to reposition them</p>
-          </div>
+                     <div className="layout-info">
+             <p>Slots: {slots.length}</p>
+             <p>Drag slots to reposition them</p>
+             <button 
+               onClick={createTestLayout}
+               style={{ 
+                 marginTop: '10px', 
+                 padding: '8px 16px', 
+                 backgroundColor: '#007bff', 
+                 color: 'white', 
+                 border: 'none', 
+                 borderRadius: '4px',
+                 cursor: 'pointer'
+               }}
+             >
+               Create Test Layout
+             </button>
+           </div>
         </div>
 
         <div 

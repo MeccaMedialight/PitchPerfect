@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaPlay, FaPause, FaChevronLeft, FaChevronRight, FaExpand, FaCompress } from 'react-icons/fa';
 import axios from 'axios';
+import config from '../config/config';
 import './PresentationViewer.css';
 
 const PresentationViewer = () => {
@@ -39,7 +40,7 @@ const PresentationViewer = () => {
 
   const loadPresentation = async () => {
     try {
-      const response = await axios.get(`http://localhost:5001/api/presentations/${presentationId}`);
+      const response = await axios.get(config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentationId}`));
       setPresentation(response.data);
       setLoading(false);
     } catch (error) {

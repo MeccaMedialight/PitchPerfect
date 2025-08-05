@@ -138,7 +138,7 @@
   transform-style: preserve-3d;
 }
 
-.slide-preview {
+.presentation-preview .slide-preview {
   position: absolute;
   top: 0;
   left: 0;

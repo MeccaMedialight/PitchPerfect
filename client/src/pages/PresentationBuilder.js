@@ -24,6 +24,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import axios from 'axios';
+import config from '../config/config';
 import SlideEditor from '../components/SlideEditor';
 import MediaUpload from '../components/MediaUpload';
 import IPadPreview from '../components/IPadPreview';
@@ -138,7 +139,7 @@ const PresentationBuilder = () => {
 
   const loadTemplate = async () => {
     try {
-      const response = await axios.get(`http://localhost:5001/api/templates/${templateId}`);
+      const response = await axios.get(config.getApiUrl(`${config.TEMPLATES_ENDPOINT}/${templateId}`));
       console.log('Template response:', response.data);
       const slides = response.data.slides.map(slide => ({
         ...slide,
@@ -162,7 +163,7 @@ const PresentationBuilder = () => {
 
   const loadPresentation = async () => {
     try {
-      const response = await axios.get(`http://localhost:5001/api/presentations/${templateId}`);
+      const response = await axios.get(config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${templateId}`));
       console.log('Presentation response:', response.data);
       const presentationData = response.data;
       setPresentation({
@@ -241,12 +242,12 @@ const PresentationBuilder = () => {
       let response;
       if (presentation.id) {
         // Update existing presentation
-        response = await axios.put(`http://localhost:5001/api/presentations/${presentation.id}`, presentationToSave);
+        response = await axios.put(config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentation.id}`), presentationToSave);
         alert('Presentation updated successfully!');
       } else {
         // Create new presentation
         presentationToSave.createdAt = new Date().toISOString();
-        response = await axios.post('http://localhost:5001/api/presentations', presentationToSave);
+        response = await axios.post(config.getApiUrl(config.PRESENTATIONS_ENDPOINT), presentationToSave);
         // Update the presentation state with the new ID
         setPresentation(prev => ({ ...prev, id: response.data.id }));
         alert('Presentation saved successfully!');
@@ -263,7 +264,7 @@ const PresentationBuilder = () => {
     setSaving(true);
     try {
       const response = await axios.post(
-        `http://localhost:5001/api/presentations/${presentation.id || 'temp'}/generate`,
+        config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentation.id || 'temp'}/generate`),
         presentation,
         { responseType: 'blob' }
       );
