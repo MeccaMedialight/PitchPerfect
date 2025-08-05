@@ -63,8 +63,18 @@
 .hero-content p {
   font-size: 1.2rem;
   margin-bottom: 2rem;
-  opacity: 0.9;
+  opacity: 1;
   line-height: 1.6;
+  text-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+  font-weight: 500;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .hero-buttons {
@@ -118,65 +128,135 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  perspective: 1000px;
 }
 
 .presentation-preview {
   position: relative;
-  width: 300px;
-  height: 200px;
+  width: 320px;
+  height: 240px;
+  transform-style: preserve-3d;
 }
 
 .slide-preview {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 16px;
+  padding: 2rem;
   color: #333;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   transform-origin: center;
-  animation: slideFloat 6s ease-in-out infinite;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transform: translateY(20px) rotateY(-10deg) scale(0.9);
+  z-index: 1;
 }
 
 .slide-1 {
-  animation-delay: 0s;
+  animation: slideShow1 6s ease-in-out infinite;
 }
 
 .slide-2 {
-  animation-delay: 2s;
+  animation: slideShow2 6s ease-in-out infinite;
 }
 
 .slide-3 {
-  animation-delay: 4s;
+  animation: slideShow3 6s ease-in-out infinite;
 }
 
-@keyframes slideFloat {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  33% { transform: translateY(-10px) rotate(0deg); }
-  66% { transform: translateY(5px) rotate(2deg); }
+@keyframes slideShow1 {
+  0%, 33.33% {
+    opacity: 1;
+    transform: translateY(0) rotateY(0deg) scale(1);
+    z-index: 3;
+  }
+  33.34%, 100% {
+    opacity: 0;
+    transform: translateY(-20px) rotateY(10deg) scale(0.9);
+    z-index: 1;
+  }
+}
+
+@keyframes slideShow2 {
+  0%, 33.33% {
+    opacity: 0;
+    transform: translateY(20px) rotateY(-10deg) scale(0.9);
+    z-index: 1;
+  }
+  33.34%, 66.66% {
+    opacity: 1;
+    transform: translateY(0) rotateY(0deg) scale(1);
+    z-index: 3;
+  }
+  66.67%, 100% {
+    opacity: 0;
+    transform: translateY(-20px) rotateY(10deg) scale(0.9);
+    z-index: 1;
+  }
+}
+
+@keyframes slideShow3 {
+  0%, 66.66% {
+    opacity: 0;
+    transform: translateY(20px) rotateY(-10deg) scale(0.9);
+    z-index: 1;
+  }
+  66.67%, 100% {
+    opacity: 1;
+    transform: translateY(0) rotateY(0deg) scale(1);
+    z-index: 3;
+  }
 }
 
 .slide-preview h3 {
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
   color: #667eea;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.slide-preview p, .slide-preview ul {
-  font-size: 0.9rem;
-  line-height: 1.4;
+.slide-preview p {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.slide-preview ul {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #555;
+  padding-left: 1.2rem;
+}
+
+.slide-preview li {
+  margin-bottom: 0.3rem;
 }
 
 .media-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 60px;
-  background: #f0f0f0;
-  border-radius: 8px;
-  color: #999;
-  font-size: 1.5rem;
+  height: 80px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  color: #667eea;
+  font-size: 2rem;
+  border: 2px dashed rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.media-placeholder:hover {
+  border-color: rgba(102, 126, 234, 0.6);
+  background: linear-gradient(135deg, #f0f2ff 0%, #e8ecff 100%);
 }
 
 /* Features Section */
@@ -274,8 +354,25 @@
   }
   
   .presentation-preview {
-    width: 250px;
-    height: 150px;
+    width: 280px;
+    height: 200px;
+  }
+  
+  .slide-preview {
+    padding: 1.5rem;
+  }
+  
+  .slide-preview h3 {
+    font-size: 1.2rem;
+  }
+  
+  .slide-preview p, .slide-preview ul {
+    font-size: 0.9rem;
+  }
+  
+  .media-placeholder {
+    height: 60px;
+    font-size: 1.5rem;
   }
   
   .features {

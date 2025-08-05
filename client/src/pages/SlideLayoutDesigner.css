@@ -4,7 +4,6 @@
   flex-direction: column;
   background: #f8fafc;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  overflow: hidden;
 }
 
 .designer-header {
@@ -17,9 +16,6 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   min-height: 180px;
   flex-shrink: 0;
-  overflow: visible;
-  height: auto;
-  flex-direction: row;
 }
 
 .designer-header h1 {
@@ -35,7 +31,6 @@
   align-items: center;
   flex-wrap: wrap;
   min-width: 0;
-  overflow: visible;
   max-width: none;
   flex: 1;
   justify-content: flex-end;
@@ -111,7 +106,6 @@
   grid-template-columns: 150px 1fr 150px;
   gap: 4rem;
   padding: 1rem;
-  overflow: hidden;
 }
 
 .toolbar {
@@ -189,35 +183,31 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
 }
 
-.slide-preview {
+.slide-preview-container {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: none !important;
-  transition: none !important;
   position: relative;
+  overflow: visible;
 }
 
 .slide-frame {
   width: 800px;
   height: 600px;
-  background: white;
+  background: #f8fafc;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   position: relative;
-  overflow: hidden;
-  animation: none !important;
-  transition: none !important;
+  overflow: visible;
   margin: 1rem;
 }
 
@@ -230,9 +220,11 @@
   cursor: grab;
   min-width: 150px;
   min-height: 100px;
-  transition: none;
-  z-index: 10;
+  transition: all 0.3s ease;
+  z-index: 100;
   user-select: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .slot-item:hover {

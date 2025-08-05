@@ -53,7 +53,7 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     // Allow images, videos, and documents
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|pdf|doc|docx|ppt|pptx/;
+    const allowedTypes = /jpeg|jpg|png|gif|svg|webp|mp4|mov|avi|pdf|doc|docx|ppt|pptx/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
@@ -830,6 +830,23 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     console.error('Upload error:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Error handling for multer upload errors
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'File too large. Maximum size is 200MB.' });
+    }
+    return res.status(400).json({ error: error.message });
+  }
+  
+  if (error.message && error.message.includes('Only image, video, and document files are allowed')) {
+    return res.status(400).json({ error: 'Only image, video, and document files are allowed!' });
+  }
+  
+  console.error('Upload middleware error:', error);
+  res.status(500).json({ error: 'Something went wrong!' });
 });
 
 // Serve uploaded files

@@ -386,7 +386,7 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
                       const file = e.target.files[0];
                       if (file) {
                         const formData = new FormData();
-                        formData.append('media', file);
+                        formData.append('file', file);
                         
                         fetch('http://localhost:5001/api/upload', {
                           method: 'POST',
@@ -395,14 +395,14 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
                         .then(response => response.json())
                         .then(data => {
                           if (data.success) {
-                            updateSlotContent(slot.id, data.filePath);
+                            updateSlotContent(slot.id, data.file.url);
                           } else {
-                            alert('Upload failed: ' + data.message);
+                            alert('Upload failed: ' + (data.error || 'Unknown error'));
                           }
                         })
                         .catch(error => {
                           console.error('Upload error:', error);
-                          alert('Upload failed. Please try again.');
+                          alert('Upload failed: ' + error.message);
                         });
                       }
                     }}

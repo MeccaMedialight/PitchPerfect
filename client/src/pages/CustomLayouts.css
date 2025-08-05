@@ -24,7 +24,10 @@
 
 .custom-layouts .header p {
   font-size: 1.1rem;
-  opacity: 0.9;
+  opacity: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .custom-layouts .empty-state {

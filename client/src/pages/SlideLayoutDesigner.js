@@ -24,13 +24,11 @@ const SlotItem = ({ id, type, position, size, onDelete, onUpdate, onClick, isSel
   };
 
   const handleMouseDown = (e) => {
-    console.log('Slot mouse down:', id);
     e.preventDefault();
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
-    console.log('Drag offset calculated:', offsetX, offsetY);
     setIsDragging(true);
     if (onDragStart) onDragStart(id, { x: offsetX, y: offsetY });
   };
@@ -48,7 +46,6 @@ const SlotItem = ({ id, type, position, size, onDelete, onUpdate, onClick, isSel
   };
 
   const handleResizeMouseDown = (e, handle) => {
-    console.log('Resize mouse down:', id, handle);
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
@@ -182,11 +179,20 @@ const SlideLayoutDesigner = () => {
     const padding = 20;
     const slotWidth = 200;
     const slotHeight = 150;
-    const maxX = 900 - slotWidth - padding;
-    const maxY = 675 - slotHeight - padding;
+    const slideWidth = 800; // Match the slide-frame width from CSS
+    const slideHeight = 600; // Match the slide-frame height from CSS
+    const maxX = slideWidth - slotWidth - padding;
+    const maxY = slideHeight - slotHeight - padding;
     
-    let x = Math.random() * maxX;
-    let y = Math.random() * maxY;
+    // Start with a more predictable position - place first slot in center
+    let x, y;
+    if (slots.length === 0) {
+      x = (slideWidth - slotWidth) / 2;
+      y = (slideHeight - slotHeight) / 2;
+    } else {
+      x = padding + (slots.length * 60) % (maxX - padding);
+      y = padding + (slots.length * 50) % (maxY - padding);
+    }
     
     // Ensure minimum distance from edges
     x = Math.max(padding, Math.min(x, maxX));
@@ -200,7 +206,8 @@ const SlideLayoutDesigner = () => {
       content: type === SlotType.TEXT ? 'Enter text here...' : '',
       style: {}
     };
-    setSlots([...slots, newSlot]);
+    
+    setSlots(prevSlots => [...prevSlots, newSlot]);
   };
 
   const deleteSlot = (id) => {
@@ -211,7 +218,6 @@ const SlideLayoutDesigner = () => {
   };
 
   const handleDragStart = (slotId, offset) => {
-    console.log('Drag start:', slotId, offset);
     setDraggingSlot(slotId);
     setDragOffset(offset);
   };
@@ -246,7 +252,6 @@ const SlideLayoutDesigner = () => {
   };
 
   const handleResizeStart = (slotId, handle, event) => {
-    console.log('Resize start:', slotId, handle);
     const slot = slots.find(s => s.id === slotId);
     if (!slot) return;
 
@@ -263,7 +268,6 @@ const SlideLayoutDesigner = () => {
   };
 
   const handleResizeEnd = (slotId, event) => {
-    console.log('Resize end:', slotId);
     setResizingSlot(null);
     setResizeHandle(null);
     setResizeStart({ x: 0, y: 0, width: 0, height: 0, slotX: 0, slotY: 0 });
@@ -288,8 +292,6 @@ const SlideLayoutDesigner = () => {
       const maxY = frameRect.height - 150;
       const constrainedX = Math.max(0, Math.min(newX, maxX));
       const constrainedY = Math.max(0, Math.min(newY, maxY));
-
-      console.log('Dragging:', draggingSlot, 'to:', constrainedX, constrainedY, 'frame rect:', frameRect);
 
       setSlots(prevSlots => 
         prevSlots.map(slot => 
@@ -341,8 +343,6 @@ const SlideLayoutDesigner = () => {
       const maxY = slideRect.height - newHeight;
       newX = Math.max(0, Math.min(newX, maxX));
       newY = Math.max(0, Math.min(newY, maxY));
-
-      console.log('Resizing:', resizingSlot, 'to:', newWidth, 'x', newHeight, 'at', newX, newY);
 
       setSlots(prevSlots => 
         prevSlots.map(s => 
@@ -523,11 +523,28 @@ const SlideLayoutDesigner = () => {
             }
           }}
         >
-          <div className="slide-preview">
+          <div className="slide-preview-container">
             <div 
               className="slide-frame"
               onClick={() => setSelectedSlot(null)}
             >
+              {slots.length === 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  color: '#a0aec0',
+                  fontSize: '1.1rem',
+                  textAlign: 'center'
+                }}>
+                  <p>Click "Add Content Slots" to create your layout</p>
+                  <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                    Slots added: {slots.length}
+                  </p>
+                </div>
+              )}
+              
               {slots.map((slot) => (
                 <SlotItem
                   key={slot.id}
@@ -537,7 +554,9 @@ const SlideLayoutDesigner = () => {
                   size={slot.size}
                   onDelete={deleteSlot}
                   onUpdate={(updatedSlot) => {
-                    setSlots(slots.map(s => s.id === updatedSlot.id ? updatedSlot : s));
+                    setSlots(prevSlots => 
+                      prevSlots.map(s => s.id === slot.id ? updatedSlot : s)
+                    );
                   }}
                   onClick={() => setSelectedSlot(slot.id)}
                   isSelected={selectedSlot === slot.id}
