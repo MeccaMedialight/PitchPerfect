@@ -311,7 +311,20 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
                                  >
                                        {slot.content ? (
                       slot.type === 'image' ? (
-                        <img src={slot.content} alt="Slot content" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img 
+                          src={slot.content} 
+                          alt="Slot content" 
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: slot.objectFit || 'cover',
+                            borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                            border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
+                            boxShadow: slot.boxShadow === 'small' ? '0 2px 4px rgba(0,0,0,0.1)' :
+                                      slot.boxShadow === 'medium' ? '0 4px 8px rgba(0,0,0,0.15)' :
+                                      slot.boxShadow === 'large' ? '0 8px 16px rgba(0,0,0,0.2)' : 'none'
+                          }} 
+                        />
                       ) : slot.type === 'video' ? (
                         <video 
                           controls 
@@ -474,13 +487,136 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
                      </div>
                    )}
                    
+                   {slot.type === 'image' && slot.content && (
+                     <div className="image-options">
+                       <h5>Image Styling</h5>
+                       <div className="option-group">
+                         <label>Border Radius:</label>
+                         <input
+                           type="range"
+                           min="0"
+                           max="50"
+                           value={slot.borderRadius || 0}
+                           onChange={(e) => {
+                             const updatedSlots = localSlide.layoutSlots.map(s =>
+                               s.id === slot.id ? { ...s, borderRadius: parseInt(e.target.value) } : s
+                             );
+                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
+                             setLocalSlide(updatedSlide);
+                             if (onImmediateUpdate) {
+                               onImmediateUpdate(updatedSlide);
+                             }
+                             onUpdate(updatedSlide);
+                           }}
+                         />
+                         <span>{slot.borderRadius || 0}px</span>
+                       </div>
+                       
+                       <div className="option-group">
+                         <label>Object Fit:</label>
+                         <select
+                           value={slot.objectFit || 'cover'}
+                           onChange={(e) => {
+                             const updatedSlots = localSlide.layoutSlots.map(s =>
+                               s.id === slot.id ? { ...s, objectFit: e.target.value } : s
+                             );
+                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
+                             setLocalSlide(updatedSlide);
+                             if (onImmediateUpdate) {
+                               onImmediateUpdate(updatedSlide);
+                             }
+                             onUpdate(updatedSlide);
+                           }}
+                         >
+                           <option value="cover">Cover</option>
+                           <option value="contain">Contain</option>
+                           <option value="fill">Fill</option>
+                           <option value="scale-down">Scale Down</option>
+                         </select>
+                       </div>
+                       
+                       <div className="option-group">
+                         <label>Border Width:</label>
+                         <input
+                           type="range"
+                           min="0"
+                           max="20"
+                           value={slot.borderWidth || 0}
+                           onChange={(e) => {
+                             const updatedSlots = localSlide.layoutSlots.map(s =>
+                               s.id === slot.id ? { ...s, borderWidth: parseInt(e.target.value) } : s
+                             );
+                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
+                             setLocalSlide(updatedSlide);
+                             if (onImmediateUpdate) {
+                               onImmediateUpdate(updatedSlide);
+                             }
+                             onUpdate(updatedSlide);
+                           }}
+                         />
+                         <span>{slot.borderWidth || 0}px</span>
+                       </div>
+                       
+                       <div className="option-group">
+                         <label>Border Color:</label>
+                         <input
+                           type="color"
+                           value={slot.borderColor || '#000000'}
+                           onChange={(e) => {
+                             const updatedSlots = localSlide.layoutSlots.map(s =>
+                               s.id === slot.id ? { ...s, borderColor: e.target.value } : s
+                             );
+                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
+                             setLocalSlide(updatedSlide);
+                             if (onImmediateUpdate) {
+                               onImmediateUpdate(updatedSlide);
+                             }
+                             onUpdate(updatedSlide);
+                           }}
+                         />
+                       </div>
+                       
+                       <div className="option-group">
+                         <label>Box Shadow:</label>
+                         <select
+                           value={slot.boxShadow || 'none'}
+                           onChange={(e) => {
+                             const updatedSlots = localSlide.layoutSlots.map(s =>
+                               s.id === slot.id ? { ...s, boxShadow: e.target.value } : s
+                             );
+                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
+                             setLocalSlide(updatedSlide);
+                             if (onImmediateUpdate) {
+                               onImmediateUpdate(updatedSlide);
+                             }
+                             onUpdate(updatedSlide);
+                           }}
+                         >
+                           <option value="none">None</option>
+                           <option value="small">Small</option>
+                           <option value="medium">Medium</option>
+                           <option value="large">Large</option>
+                         </select>
+                       </div>
+                     </div>
+                   )}
+                   
                    {slot.content && (
                      <div className="media-preview">
                        {slot.type === 'image' ? (
                          <img 
                            src={slot.content} 
                            alt="Preview" 
-                           style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'cover' }} 
+                           style={{ 
+                             maxWidth: '100%', 
+                             maxHeight: '100px', 
+                             objectFit: slot.objectFit || 'cover',
+                             borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                             border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
+                             boxShadow: slot.boxShadow === 'small' ? '0 2px 4px rgba(0,0,0,0.1)' :
+                                       slot.boxShadow === 'medium' ? '0 4px 8px rgba(0,0,0,0.15)' :
+                                       slot.boxShadow === 'large' ? '0 8px 16px rgba(0,0,0,0.2)' : 'none'
+                           }} 
                          />
                        ) : (
                          <video 

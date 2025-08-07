@@ -8,7 +8,11 @@ const config = {
   CORS_ORIGINS: [
     process.env.CLIENT_URL || 'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost:8080',  // Webpack dev server
+    'http://127.0.0.1:8080', // Alternative localhost
+    'capacitor://localhost',  // Capacitor
+    'ionic://localhost',      // Ionic
   ],
   
   // File upload configuration

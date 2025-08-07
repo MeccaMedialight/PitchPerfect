@@ -1,7 +1,6 @@
 import React from 'react';
 import { FaTimes, FaChevronLeft, FaChevronRight, FaPlay, FaPause } from 'react-icons/fa';
 import SlidePreview from './SlidePreview';
-import styles from './IPadPreview.module.css';
 
 const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onSlideChange }) => {
   const [currentSlide, setCurrentSlide] = React.useState(currentSlideIndex);
@@ -81,14 +80,55 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
   const currentSlideData = presentation.slides[currentSlide];
 
   return (
-    <div className={styles.ipadPreviewOverlay}>
-      <div className={styles.ipadPreviewContainer}>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.9)',
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      paddingTop: '50px',
+      zIndex: 1000,
+      backdropFilter: 'blur(5px)'
+    }}>
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '2rem'
+      }}>
         {/* iPad Frame */}
-        <div className={styles.ipadFrame}>
+        <div style={{
+          width: '800px',
+          height: '600px',
+          background: '#1a1a1a',
+          borderRadius: '20px',
+          padding: '20px',
+          boxShadow: '0 0 0 2px #333, 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px #444',
+          position: 'relative'
+        }}>
           {/* iPad Screen */}
-          <div className={styles.ipadScreen}>
+          <div style={{
+            width: '100%',
+            height: '100%',
+            background: 'white',
+            borderRadius: '12px',
+            overflow: 'visible',
+            position: 'relative'
+          }}>
             {/* Presentation Content */}
-            <div className={styles.presentationViewport}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              background: 'white',
+              position: 'relative',
+              overflow: 'visible'
+            }}>
               <SlidePreview
                 slide={currentSlideData}
                 isActive={true}
@@ -100,10 +140,38 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
         </div>
 
         {/* Controls */}
-        <div className={styles.ipadControls}>
-          <div className={styles.controlGroup}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1rem',
+          background: 'rgba(255, 255, 255, 0.1)',
+          padding: '1.5rem',
+          borderRadius: '15px',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem'
+          }}>
             <button 
-              className={styles.controlBtn}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '50px',
+                height: '50px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(5px)'
+              }}
               onClick={handlePrevious}
               disabled={currentSlide === 0}
             >
@@ -111,14 +179,42 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
             </button>
             
             <button 
-              className={`${styles.controlBtn} ${styles.playBtn}`}
+              style={{
+                background: 'rgba(102, 126, 234, 0.8)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '50px',
+                height: '50px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(5px)'
+              }}
               onClick={() => setIsPlaying(!isPlaying)}
             >
               {isPlaying ? <FaPause /> : <FaPlay />}
             </button>
             
             <button 
-              className={styles.controlBtn}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '50px',
+                height: '50px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(5px)'
+              }}
               onClick={handleNext}
               disabled={currentSlide === presentation.slides.length - 1}
             >
@@ -126,18 +222,56 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
             </button>
           </div>
           
-          <div className={styles.slideIndicator}>
+          <div style={{
+            color: 'white',
+            fontSize: '1.1rem',
+            fontWeight: '500',
+            textAlign: 'center',
+            background: 'rgba(0, 0, 0, 0.3)',
+            padding: '0.5rem 1rem',
+            borderRadius: '20px',
+            backdropFilter: 'blur(5px)'
+          }}>
             {currentSlide + 1} / {presentation.slides.length}
           </div>
         </div>
 
         {/* Close Button */}
-        <button className={styles.closeBtn} onClick={onClose}>
+        <button style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(255, 255, 255, 0.2)',
+          border: 'none',
+          borderRadius: '50%',
+          width: '50px',
+          height: '50px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '1.2rem',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          backdropFilter: 'blur(5px)'
+        }} onClick={onClose}>
           <FaTimes />
         </button>
 
         {/* Instructions */}
-        <div className={styles.previewInstructions}>
+        <div style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          color: 'rgba(255, 255, 255, 0.8)',
+          fontSize: '0.9rem',
+          textAlign: 'center',
+          background: 'rgba(0, 0, 0, 0.3)',
+          padding: '0.75rem 1.5rem',
+          borderRadius: '20px',
+          backdropFilter: 'blur(5px)'
+        }}>
           <p>Use arrow keys to navigate • Space to play/pause • Esc to close</p>
         </div>
       </div>

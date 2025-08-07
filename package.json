@@ -1,34 +1,28 @@
 {
-  "name": "pitchperfect",
+  "name": "PitchPerfect",
   "version": "1.0.0",
-  "description": "A modern web application for creating beautiful presentations with rich media support that can run offline on iPad and other devices.",
+  "description": "A Capacitor.js app for playing PitchPerfect presentations on iPad iOS",
   "main": "index.js",
   "scripts": {
+    "start": "concurrently \"npm run start:server\" \"npm run start:client\"",
+    "start:server": "cd server && npm start",
+    "start:client": "cd client && npm start",
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
-    "start": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "cd server && npm start",
-    "client": "cd client && npm start",
-    "build": "cd client && npm run build",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "test": "echo \"No tests specified\" && exit 0"
+    "build": "npm run build:web",
+    "build:web": "webpack --mode production",
+    "dev": "webpack serve --mode development",
+    "ios": "npx cap run ios",
+    "android": "npx cap run android",
+    "sync": "npx cap sync",
+    "open:ios": "npx cap open ios",
+    "open:android": "npx cap open android",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "presentation",
-    "slides",
-    "pwa",
-    "offline",
-    "ipad",
-    "react",
-    "nodejs",
-    "express"
-  ],
-  "author": "MeccaMedialight",
+  "keywords": ["capacitor", "presentation", "player", "ipad", "ios"],
+  "author": "PitchPerfect Team",
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
+    "axios": "^1.11.0",
     "concurrently": "^8.2.2"
-  },
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
   }
 }

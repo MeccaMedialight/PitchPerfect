@@ -63,10 +63,87 @@
 .presentationViewport {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   background: white;
+  position: relative;
+  overflow: visible;
+}
+
+/* Ensure custom layout slides fill the entire viewport */
+.presentationViewport .slideDisplay .slideContentCustomLayoutSlide {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  flex: none !important;
+  background-color: rgba(255, 255, 0, 0.3) !important;
+  border: 4px solid yellow !important;
+  z-index: 1000 !important;
+}
+
+/* Ensure custom layout containers are properly sized */
+.presentationViewport .slideDisplay .customLayoutContainer {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  overflow: visible !important;
+  background-color: rgba(0, 255, 0, 0.3) !important;
+  border: 4px solid green !important;
+  z-index: 1001 !important;
+}
+
+/* Ensure layout slots are visible in iPad preview */
+.presentationViewport .slideDisplay .layoutSlot {
+  position: absolute !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1002 !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 4px solid #007bff !important;
+  min-width: 80px !important;
+  min-height: 80px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Ensure slot content is visible */
+.presentationViewport .slideDisplay .layoutSlot * {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure slot text is visible */
+.presentationViewport .slideDisplay .slotText {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #000 !important;
+  background-color: transparent !important;
+  width: 100% !important;
+  height: 100% !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Ensure slot placeholders are visible */
+.presentationViewport .slideDisplay .slotPlaceholder {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #999 !important;
+  background-color: rgba(0, 123, 255, 0.1) !important;
+  width: 100% !important;
+  height: 100% !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
 }
 
 /* Controls */

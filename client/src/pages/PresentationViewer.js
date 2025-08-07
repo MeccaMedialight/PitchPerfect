@@ -350,7 +350,20 @@ const SlideDisplay = ({ slide }) => {
                     }}
                   >
                     {slot.type === 'image' && slot.content && (
-                      <img src={slot.content} alt="Slot content" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img 
+                        src={slot.content} 
+                        alt="Slot content" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: slot.objectFit || 'cover',
+                          borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                          border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
+                          boxShadow: slot.boxShadow === 'small' ? '0 2px 4px rgba(0,0,0,0.1)' :
+                                    slot.boxShadow === 'medium' ? '0 4px 8px rgba(0,0,0,0.15)' :
+                                    slot.boxShadow === 'large' ? '0 8px 16px rgba(0,0,0,0.2)' : 'none'
+                        }} 
+                      />
                     )}
                     {slot.type === 'video' && slot.content && (
                       <video controls style={{ width: '100%', height: '100%' }}>

@@ -57,18 +57,18 @@
   border: none;
   margin: 0;
   padding: 0;
-  overflow: hidden !important;
+  overflow: visible !important;
   position: relative;
   box-sizing: border-box;
 }
 
 /* Ensure all content is fully visible in iPad preview */
-.slidePreviewIpadPreview .slideContent * {
+.slidePreviewIpadPreview .slideDisplay * {
   opacity: 1 !important;
 }
 
 /* Make slide content fill the entire iPad preview */
-.slidePreviewIpadPreview .slideContent {
+.slidePreviewIpadPreview .slideDisplay .slideContent {
   height: 100%;
   width: 100%;
   padding: 6rem;
@@ -83,7 +83,7 @@
 }
 
 /* Custom layout slides should not have padding in iPad preview */
-.slidePreviewIpadPreview .slideContentCustomLayoutSlide {
+.slidePreviewIpadPreview .slideDisplay .slideContentCustomLayoutSlide {
   padding: 0 !important;
   justify-content: flex-start !important;
   align-items: flex-start !important;
@@ -92,10 +92,15 @@
   max-width: none !important;
   max-height: none !important;
   overflow: visible !important;
+  display: block !important;
+  flex-direction: unset !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
 }
 
 /* Force all text elements to stay within bounds (except custom layout) */
-.slidePreviewIpadPreview .slideContent:not(.slideContentCustomLayoutSlide) * {
+.slidePreviewIpadPreview .slideDisplay .slideContent:not(.slideContentCustomLayoutSlide) * {
   max-width: 100% !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -105,27 +110,75 @@
 }
 
 /* Custom layout slots should not be constrained by the general rules */
-.slidePreviewIpadPreview .customLayoutContainer * {
+.slidePreviewIpadPreview .slideDisplay .customLayoutContainer * {
   max-width: none !important;
   overflow: visible !important;
   text-overflow: clip !important;
   white-space: normal !important;
   word-break: normal !important;
   hyphens: none !important;
-  display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
 
 /* Custom layout slots should not be constrained by any general positioning rules */
-.slidePreviewIpadPreview .customLayoutContainer [style*="position: absolute"],
-.slidePreviewIpadPreview .customLayoutContainer [style*="position:absolute"] {
+.slidePreviewIpadPreview .slideDisplay .customLayoutContainer [style*="position: absolute"],
+.slidePreviewIpadPreview .slideDisplay .customLayoutContainer [style*="position:absolute"] {
   max-width: none !important;
   max-height: none !important;
-  display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   z-index: 10 !important;
+}
+
+/* Ensure layout slots are visible in iPad preview */
+.slidePreviewIpadPreview .slideDisplay .layoutSlot {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1002 !important;
+  position: absolute !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 4px solid #007bff !important;
+  min-width: 80px !important;
+  min-height: 80px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Ensure slot content is visible */
+.slidePreviewIpadPreview .slideDisplay .layoutSlot * {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure slot text is visible */
+.slidePreviewIpadPreview .slideDisplay .slotText {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #000 !important;
+  background-color: transparent !important;
+  width: 100% !important;
+  height: 100% !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Ensure slot placeholders are visible */
+.slidePreviewIpadPreview .slideDisplay .slotPlaceholder {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #999 !important;
+  background-color: rgba(0, 123, 255, 0.1) !important;
+  width: 100% !important;
+  height: 100% !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
 }
 
 /* iPad Preview - Larger fonts for all slide types */

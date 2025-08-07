@@ -263,16 +263,47 @@ const PresentationBuilder = () => {
   const generateStandalone = async () => {
     setSaving(true);
     try {
+      // First, save the presentation to ensure all changes are preserved
+      const presentationToSave = {
+        ...presentation,
+        updatedAt: new Date().toISOString(),
+        title: presentation.title || 'Untitled Presentation'
+      };
+      
+      let savedPresentationId = presentation.id;
+      
+      try {
+        if (presentation.id) {
+          // Update existing presentation
+          await axios.put(config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentation.id}`), presentationToSave);
+          console.log('Presentation updated before export');
+        } else {
+          // Create new presentation
+          presentationToSave.createdAt = new Date().toISOString();
+          const saveResponse = await axios.post(config.getApiUrl(config.PRESENTATIONS_ENDPOINT), presentationToSave);
+          savedPresentationId = saveResponse.data.presentationId;
+          // Update the presentation state with the new ID
+          setPresentation(prev => ({ ...prev, id: savedPresentationId }));
+          console.log('Presentation saved before export with ID:', savedPresentationId);
+        }
+      } catch (saveError) {
+        console.error('Error saving presentation before export:', saveError);
+        alert('Error saving presentation. Please try saving manually first, then export.');
+        setSaving(false);
+        return;
+      }
+      
+      // Now generate the standalone presentation using the saved data
       const response = await axios.post(
-        config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${presentation.id || 'temp'}/generate`),
-        presentation,
+        config.getApiUrl(`${config.PRESENTATIONS_ENDPOINT}/${savedPresentationId}/generate`),
+        presentationToSave,
         { responseType: 'blob' }
       );
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `presentation-${presentation.title}.zip`);
+      link.setAttribute('download', `presentation-${presentationToSave.title || 'Untitled'}.zip`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -280,7 +311,7 @@ const PresentationBuilder = () => {
       setSaving(false);
     } catch (error) {
       console.error('Error generating presentation:', error);
-      alert('Error generating standalone presentation');
+      alert('Error generating standalone presentation. The presentation may have been saved, but the export failed. Please try again.');
       setSaving(false);
     }
   };
@@ -398,8 +429,9 @@ const PresentationBuilder = () => {
             className="btn btn-primary"
             onClick={generateStandalone}
             disabled={saving}
+            title="Save and export presentation as standalone ZIP file"
           >
-            <FaDownload /> Export
+            <FaDownload /> {saving ? 'Saving & Exporting...' : 'Save & Export'}
           </button>
         </div>
       </div>

@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config({ path: '../.env' });
+
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -15,7 +18,7 @@ app.use(cors({
   origin: config.CORS_ORIGINS,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json({ limit: '200mb' }));
 
@@ -788,6 +791,11 @@ app.post('/test-create-presentation-with-media', (req, res) => {
   }
 });
 
+// Health check endpoint for testing CORS
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Get all templates
 app.get('/api/templates', (req, res) => {
   console.log('Templates route hit');
@@ -852,6 +860,37 @@ app.use((error, req, res, next) => {
 // Serve uploaded files
 app.use('/uploads', express.static(uploadsDir));
 
+// Helper function to safely serialize JSON with UTF-8 encoding
+function safeJsonStringify(obj) {
+  try {
+    return JSON.stringify(obj, null, 2);
+  } catch (error) {
+    console.error('Error serializing JSON:', error);
+    // Fallback: try to serialize with error handling
+    return JSON.stringify(obj, (key, value) => {
+      if (typeof value === 'string') {
+        // Ensure the string is valid UTF-8
+        try {
+          return value.normalize('NFC');
+        } catch (e) {
+          return value;
+        }
+      }
+      return value;
+    }, 2);
+  }
+}
+
+// Helper function to safely parse JSON with UTF-8 encoding
+function safeJsonParse(jsonString) {
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('Error parsing JSON:', error);
+    throw error;
+  }
+}
+
 // Save presentation
 app.post('/api/presentations', (req, res) => {
   try {
@@ -868,7 +907,9 @@ app.post('/api/presentations', (req, res) => {
     };
 
     const filePath = path.join(presentationsDir, `${presentationId}.json`);
-    fs.writeJsonSync(filePath, presentationData);
+    // Ensure UTF-8 encoding when writing JSON
+    const jsonString = safeJsonStringify(presentationData);
+    fs.writeFileSync(filePath, jsonString, 'utf8');
 
     res.json({
       success: true,
@@ -889,7 +930,7 @@ app.get('/api/presentations', (req, res) => {
     for (const file of files) {
       if (file.endsWith('.json')) {
         const filePath = path.join(presentationsDir, file);
-        const presentationData = fs.readJsonSync(filePath);
+        const presentationData = safeJsonParse(fs.readFileSync(filePath, 'utf8'));
         const presentationId = file.replace('.json', '');
         
         presentations.push({
@@ -911,6 +952,47 @@ app.get('/api/presentations', (req, res) => {
   }
 });
 
+// List all presentations for PitchPerfect Player
+app.get('/api/presentations/player/list', (req, res) => {
+  try {
+    const files = fs.readdirSync(presentationsDir);
+    const presentations = [];
+    
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const filePath = path.join(presentationsDir, file);
+        const presentationData = safeJsonParse(fs.readFileSync(filePath, 'utf8'));
+        const presentationId = file.replace('.json', '');
+        
+        presentations.push({
+          id: presentationId,
+          title: presentationData.title || 'Untitled Presentation',
+          description: presentationData.description || '',
+          createdAt: presentationData.createdAt || fs.statSync(filePath).mtime,
+          updatedAt: presentationData.updatedAt || fs.statSync(filePath).mtime,
+          slideCount: presentationData.slides ? presentationData.slides.length : 0,
+          hasMedia: presentationData.slides ? presentationData.slides.some(slide => slide.imageUrl || slide.videoUrl) : false,
+          duration: presentationData.settings?.duration || 0,
+          template: presentationData.template || 'default',
+          downloadUrl: `${config.getServerUrl()}/api/presentations/${presentationId}/download`,
+          metadataUrl: `${config.getServerUrl()}/api/presentations/${presentationId}/metadata`
+        });
+      }
+    }
+    
+    // Sort by creation date (newest first)
+    presentations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    res.json({
+      success: true,
+      count: presentations.length,
+      presentations: presentations
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get presentation
 app.get('/api/presentations/:id', (req, res) => {
   try {
@@ -920,68 +1002,42 @@ app.get('/api/presentations/:id', (req, res) => {
       return res.status(404).json({ error: 'Presentation not found' });
     }
 
-    const presentationData = fs.readJsonSync(filePath);
+    const presentationData = safeJsonParse(fs.readFileSync(filePath, 'utf8'));
     res.json(presentationData);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Update presentation
-app.put('/api/presentations/:id', (req, res) => {
+// Download presentation for PitchPerfect Player
+app.get('/api/presentations/:id/download', async (req, res) => {
+  // Set a longer timeout for large file processing
+  req.setTimeout(600000); // 10 minutes
+  
   try {
-    const { title, template, slides, settings } = req.body;
+    console.log('Download endpoint hit with ID:', req.params.id);
+    
     const filePath = path.join(presentationsDir, `${req.params.id}.json`);
     
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Presentation not found' });
     }
 
-    // Read existing presentation to preserve createdAt
-    const existingData = fs.readJsonSync(filePath);
-    
-    const presentationData = {
-      ...existingData,
-      title,
-      template,
-      slides,
-      settings,
-      updatedAt: new Date().toISOString()
-    };
-
-    fs.writeJsonSync(filePath, presentationData);
-
-    res.json({
-      success: true,
-      message: 'Presentation updated successfully'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Generate downloadable presentation
-app.post('/api/presentations/:id/generate', async (req, res) => {
-  // Set a longer timeout for large file processing
-  req.setTimeout(600000); // 10 minutes
-  
-  try {
-    console.log('Generate endpoint hit with ID:', req.params.id);
-    console.log('Request body keys:', Object.keys(req.body));
-    
-    // Use presentation data from request body instead of file
-    const presentationData = req.body;
+    // Read the latest saved version of the presentation
+    const presentationData = safeJsonParse(fs.readFileSync(filePath, 'utf8'));
     
     if (!presentationData || !presentationData.slides) {
-      console.log('Invalid presentation data:', presentationData);
       return res.status(400).json({ error: 'Invalid presentation data' });
     }
     
     console.log('Presentation has', presentationData.slides.length, 'slides');
+    console.log('Presentation title:', presentationData.title);
+    console.log('Last updated:', presentationData.updatedAt);
+    
     const zip = new JSZip();
 
     // Add presentation data (will be updated after media processing)
-    zip.file('presentation.json', JSON.stringify(presentationData, null, 2));
+    zip.file('presentation.json', safeJsonStringify(presentationData));
 
     // Generate HTML viewer (will be updated after media processing)
     const htmlContent = generateHTMLViewer(presentationData);
@@ -999,43 +1055,62 @@ app.post('/api/presentations/:id/generate', async (req, res) => {
     const readmeContent = generateReadmeContent(presentationData);
     zip.file('README.md', readmeContent);
 
-    // Add media files
+    // Add media files - comprehensive collection
     const mediaFiles = new Set();
     const mediaFilesAdded = [];
     const mediaFilesMissing = [];
-    const mediaFileMap = {}; // Maps original URLs to local filenames
+    const mediaFileMap = {};
     
+    // Collect all media files from all slide types
     presentationData.slides.forEach((slide, index) => {
-      console.log(`Slide ${index}:`, { imageUrl: slide.imageUrl, videoUrl: slide.videoUrl });
-      if (slide.imageUrl) mediaFiles.add(slide.imageUrl);
-      if (slide.videoUrl) mediaFiles.add(slide.videoUrl);
+      console.log(`Processing slide ${index + 1}:`, { type: slide.type, imageUrl: slide.imageUrl, videoUrl: slide.videoUrl });
+      
+      // Handle regular image/video URLs
+      if (slide.imageUrl) {
+        mediaFiles.add(slide.imageUrl);
+        console.log(`Added image URL: ${slide.imageUrl}`);
+      }
+      if (slide.videoUrl) {
+        mediaFiles.add(slide.videoUrl);
+        console.log(`Added video URL: ${slide.videoUrl}`);
+      }
       
       // Handle multi-media slides
       if (slide.type === 'multi-media' && slide.mediaItems) {
-        slide.mediaItems.forEach(mediaItem => {
+        slide.mediaItems.forEach((mediaItem, itemIndex) => {
           if (mediaItem.url) {
             mediaFiles.add(mediaItem.url);
+            console.log(`Added multi-media item ${itemIndex}: ${mediaItem.url}`);
           }
         });
       }
       
       // Handle custom layout slides
       if (slide.type === 'custom-layout' && slide.layoutSlots) {
-        slide.layoutSlots.forEach(slot => {
+        slide.layoutSlots.forEach((slot, slotIndex) => {
           if (slot.content && (slot.type === 'image' || slot.type === 'video')) {
             mediaFiles.add(slot.content);
+            console.log(`Added custom layout slot ${slotIndex}: ${slot.content}`);
           }
         });
       }
     });
 
-    console.log('Media files found:', Array.from(mediaFiles));
+    console.log('Total media files found:', mediaFiles.size);
+    console.log('Media files:', Array.from(mediaFiles));
 
+    // Process each media file
     for (const mediaFile of mediaFiles) {
       if (mediaFile) {
         let fileName = null;
         let mediaPath = null;
         let isExternalUrl = false;
+        
+        // Skip if already processed (has media/ prefix)
+        if (mediaFile.startsWith('media/')) {
+          console.log(`Skipping already processed media file: ${mediaFile}`);
+          continue;
+        }
         
         // Handle both relative and full URLs
         if (mediaFile.startsWith('/uploads/')) {
@@ -1123,7 +1198,270 @@ app.post('/api/presentations/:id/generate', async (req, res) => {
     const processedPresentationData = processPresentationDataForExport(presentationData, mediaFileMap);
     
     // Update the presentation.json and index.html files with processed data
-    zip.file('presentation.json', JSON.stringify(processedPresentationData, null, 2));
+    zip.file('presentation.json', safeJsonStringify(processedPresentationData));
+    const updatedHtmlContent = generateHTMLViewer(processedPresentationData);
+    zip.file('index.html', updatedHtmlContent);
+
+    console.log('Generating ZIP file...');
+    console.log('ZIP file list:', Object.keys(zip.files));
+    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+    console.log('ZIP file generated, size:', zipBuffer.length, 'bytes');
+    
+    // Set headers for PitchPerfect Player download
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="pitchperfect-${req.params.id}.zip"`);
+    res.setHeader('Content-Length', zipBuffer.length);
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    
+    res.send(zipBuffer);
+    console.log('ZIP file sent successfully to PitchPerfect Player');
+
+  } catch (error) {
+    console.error('Error in download endpoint:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get presentation metadata for PitchPerfect Player
+app.get('/api/presentations/:id/metadata', (req, res) => {
+  try {
+    const filePath = path.join(presentationsDir, `${req.params.id}.json`);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Presentation not found' });
+    }
+
+    const presentationData = safeJsonParse(fs.readFileSync(filePath, 'utf8'));
+    
+    // Return only the metadata needed by the player
+    const metadata = {
+      id: req.params.id,
+      title: presentationData.title || 'Untitled Presentation',
+      description: presentationData.description || '',
+      createdAt: presentationData.createdAt || fs.statSync(filePath).mtime,
+      updatedAt: presentationData.updatedAt || fs.statSync(filePath).mtime,
+      slideCount: presentationData.slides ? presentationData.slides.length : 0,
+      hasMedia: presentationData.slides ? presentationData.slides.some(slide => slide.imageUrl || slide.videoUrl) : false,
+      duration: presentationData.settings?.duration || 0,
+      template: presentationData.template || 'default',
+      downloadUrl: `${config.getServerUrl()}/api/presentations/${req.params.id}/download`
+    };
+    
+    res.json(metadata);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update presentation
+app.put('/api/presentations/:id', (req, res) => {
+  try {
+    const { title, template, slides, settings } = req.body;
+    const filePath = path.join(presentationsDir, `${req.params.id}.json`);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Presentation not found' });
+    }
+
+    // Read existing presentation to preserve createdAt
+    const existingData = safeJsonParse(fs.readFileSync(filePath, 'utf8'));
+    
+    const presentationData = {
+      ...existingData,
+      title,
+      template,
+      slides,
+      settings,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Ensure UTF-8 encoding when writing JSON
+    const jsonString = safeJsonStringify(presentationData);
+    fs.writeFileSync(filePath, jsonString, 'utf8');
+
+    res.json({
+      success: true,
+      message: 'Presentation updated successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate downloadable presentation
+app.post('/api/presentations/:id/generate', async (req, res) => {
+  // Set a longer timeout for large file processing
+  req.setTimeout(600000); // 10 minutes
+  
+  try {
+    console.log('Generate endpoint hit with ID:', req.params.id);
+    console.log('Request body keys:', Object.keys(req.body));
+    
+    // Use presentation data from request body instead of file
+    const presentationData = req.body;
+    
+    if (!presentationData || !presentationData.slides) {
+      console.log('Invalid presentation data:', presentationData);
+      return res.status(400).json({ error: 'Invalid presentation data' });
+    }
+    
+    console.log('Presentation has', presentationData.slides.length, 'slides');
+    const zip = new JSZip();
+
+    // Add presentation data (will be updated after media processing)
+    zip.file('presentation.json', safeJsonStringify(presentationData));
+
+    // Generate HTML viewer (will be updated after media processing)
+    const htmlContent = generateHTMLViewer(presentationData);
+    zip.file('index.html', htmlContent);
+
+    // Generate CSS styles
+    const cssContent = generateCSSStyles();
+    zip.file('styles.css', cssContent);
+
+    // Generate JavaScript
+    const jsContent = generatePresentationJS();
+    zip.file('presentation.js', jsContent);
+
+    // Add README file
+    const readmeContent = generateReadmeContent(presentationData);
+    zip.file('README.md', readmeContent);
+
+    // Add media files
+    const mediaFiles = new Set();
+    const mediaFilesAdded = [];
+    const mediaFilesMissing = [];
+    const mediaFileMap = {}; // Maps original URLs to local filenames
+    
+    presentationData.slides.forEach((slide, index) => {
+      console.log(`Slide ${index}:`, { imageUrl: slide.imageUrl, videoUrl: slide.videoUrl });
+      if (slide.imageUrl) mediaFiles.add(slide.imageUrl);
+      if (slide.videoUrl) mediaFiles.add(slide.videoUrl);
+      
+      // Handle multi-media slides
+      if (slide.type === 'multi-media' && slide.mediaItems) {
+        slide.mediaItems.forEach(mediaItem => {
+          if (mediaItem.url) {
+            mediaFiles.add(mediaItem.url);
+          }
+        });
+      }
+      
+      // Handle custom layout slides
+      if (slide.type === 'custom-layout' && slide.layoutSlots) {
+        slide.layoutSlots.forEach(slot => {
+          if (slot.content && (slot.type === 'image' || slot.type === 'video')) {
+            mediaFiles.add(slot.content);
+          }
+        });
+      }
+    });
+
+    console.log('Media files found:', Array.from(mediaFiles));
+
+    for (const mediaFile of mediaFiles) {
+      if (mediaFile) {
+        let fileName = null;
+        let mediaPath = null;
+        let isExternalUrl = false;
+        
+        // Skip if already processed (has media/ prefix)
+        if (mediaFile.startsWith('media/')) {
+          console.log(`Skipping already processed media file: ${mediaFile}`);
+          continue;
+        }
+        
+        // Handle both relative and full URLs
+        if (mediaFile.startsWith('/uploads/')) {
+          fileName = mediaFile.replace('/uploads/', '');
+          mediaPath = path.join(uploadsDir, fileName);
+        } else if (mediaFile.includes('/uploads/')) {
+          // Extract filename from full URL
+          const urlParts = mediaFile.split('/uploads/');
+          if (urlParts.length > 1) {
+            fileName = urlParts[1];
+            mediaPath = path.join(uploadsDir, fileName);
+          }
+        } else if (mediaFile.startsWith('http://') || mediaFile.startsWith('https://')) {
+          // Handle external URLs
+          isExternalUrl = true;
+          fileName = generateExternalFileName(mediaFile);
+          console.log(`Processing external media: ${mediaFile} -> ${fileName}`);
+        }
+        
+        if (fileName) {
+          if (isExternalUrl) {
+            // Download external media
+            try {
+              const fileBuffer = await downloadExternalMedia(mediaFile, fileName);
+              if (fileBuffer) {
+                console.log(`Adding external media to ZIP: media/${fileName}`);
+                zip.file(`media/${fileName}`, fileBuffer);
+                mediaFilesAdded.push(fileName);
+                mediaFileMap[mediaFile] = fileName; // Add to mapping
+                console.log(`Added external media file: ${fileName} (${fileBuffer.length} bytes)`);
+              } else {
+                console.warn(`Failed to download external media: ${mediaFile}`);
+                mediaFilesMissing.push(fileName);
+              }
+            } catch (error) {
+              console.error(`Error downloading external media ${mediaFile}:`, error.message);
+              mediaFilesMissing.push(fileName);
+            }
+          } else if (mediaPath) {
+            // Handle local files
+            console.log('Checking media file:', mediaPath, 'exists:', fs.existsSync(mediaPath));
+            
+            if (fs.existsSync(mediaPath)) {
+              try {
+                const fileSize = fs.statSync(mediaPath).size;
+                console.log(`Reading file: ${fileName} (${fileSize} bytes)`);
+                
+                // Check if file is too large and warn user
+                if (fileSize > 50 * 1024 * 1024) { // 50MB
+                  console.warn(`Large file detected: ${fileName} (${(fileSize / 1024 / 1024).toFixed(1)}MB) - this may take a while`);
+                }
+                
+                // Use streaming for large files to avoid memory issues
+                const fileBuffer = fs.readFileSync(mediaPath);
+                console.log(`File read successfully: ${fileName} (${fileBuffer.length} bytes)`);
+                
+                console.log(`Adding to ZIP: media/${fileName}`);
+                zip.file(`media/${fileName}`, fileBuffer);
+                mediaFilesAdded.push(fileName);
+                mediaFileMap[mediaFile] = fileName; // Add to mapping
+                console.log(`Added media file: ${fileName} (${fileBuffer.length} bytes)`);
+              } catch (error) {
+                console.error(`Error reading media file ${fileName}:`, error.message);
+                console.error(`Error stack:`, error.stack);
+                mediaFilesMissing.push(fileName);
+              }
+            } else {
+              console.warn(`Media file not found: ${mediaPath}`);
+              mediaFilesMissing.push(fileName);
+            }
+          }
+        } else {
+          console.log(`Skipping invalid media file: ${mediaFile}`);
+        }
+      }
+    }
+
+    console.log(`Media files added: ${mediaFilesAdded.length}`);
+    console.log(`Media files missing: ${mediaFilesMissing.length}`);
+    if (mediaFilesMissing.length > 0) {
+      console.warn('Missing media files:', mediaFilesMissing);
+    }
+
+    // Process presentation data to replace external URLs with local references
+    const processedPresentationData = processPresentationDataForExport(presentationData, mediaFileMap);
+    
+    // Update the presentation.json and index.html files with processed data
+    zip.file('presentation.json', safeJsonStringify(processedPresentationData));
     const updatedHtmlContent = generateHTMLViewer(processedPresentationData);
     zip.file('index.html', updatedHtmlContent);
 
@@ -1200,45 +1538,184 @@ function generateExternalFileName(url, originalFileName = null) {
 function processPresentationDataForExport(presentationData, mediaFileMap) {
   const processedData = JSON.parse(JSON.stringify(presentationData));
   
-  processedData.slides.forEach(slide => {
+  console.log('Processing presentation data for export...');
+  console.log('Media file map:', mediaFileMap);
+  
+  processedData.slides.forEach((slide, slideIndex) => {
+    // Preserve all slide-level styling
+    if (slide.backgroundColor) {
+      console.log(`Slide ${slideIndex} - Preserving backgroundColor: ${slide.backgroundColor}`);
+    }
+    if (slide.textColor) {
+      console.log(`Slide ${slideIndex} - Preserving textColor: ${slide.textColor}`);
+    }
+    if (slide.settings) {
+      console.log(`Slide ${slideIndex} - Preserving slide settings:`, slide.settings);
+    }
+    
     // Handle regular image/video URLs
     if (slide.imageUrl && mediaFileMap[slide.imageUrl]) {
-      slide.imageUrl = `media/${mediaFileMap[slide.imageUrl]}`;
+      // Only add media/ prefix if it's not already there
+      const fileName = mediaFileMap[slide.imageUrl];
+      const originalUrl = slide.imageUrl;
+      slide.imageUrl = slide.imageUrl.startsWith('media/') ? slide.imageUrl : `media/${fileName}`;
+      console.log(`Slide ${slideIndex} - Image URL: ${originalUrl} -> ${slide.imageUrl}`);
     }
     if (slide.videoUrl && mediaFileMap[slide.videoUrl]) {
-      slide.videoUrl = `media/${mediaFileMap[slide.videoUrl]}`;
+      // Only add media/ prefix if it's not already there
+      const fileName = mediaFileMap[slide.videoUrl];
+      const originalUrl = slide.videoUrl;
+      slide.videoUrl = slide.videoUrl.startsWith('media/') ? slide.videoUrl : `media/${fileName}`;
+      console.log(`Slide ${slideIndex} - Video URL: ${originalUrl} -> ${slide.videoUrl}`);
     }
     
     // Handle multi-media slides
     if (slide.type === 'multi-media' && slide.mediaItems) {
-      slide.mediaItems.forEach(mediaItem => {
+      slide.mediaItems.forEach((mediaItem, itemIndex) => {
         if (mediaItem.url && mediaFileMap[mediaItem.url]) {
-          mediaItem.url = `media/${mediaFileMap[mediaItem.url]}`;
+          // Only add media/ prefix if it's not already there
+          const fileName = mediaFileMap[mediaItem.url];
+          const originalUrl = mediaItem.url;
+          mediaItem.url = mediaItem.url.startsWith('media/') ? mediaItem.url : `media/${fileName}`;
+          console.log(`Slide ${slideIndex} - Multi-media item ${itemIndex}: ${originalUrl} -> ${mediaItem.url}`);
+        }
+        
+        // Preserve media item styling
+        if (mediaItem.position) {
+          console.log(`Slide ${slideIndex} - Multi-media item ${itemIndex} - Preserving position:`, mediaItem.position);
+        }
+        if (mediaItem.style) {
+          console.log(`Slide ${slideIndex} - Multi-media item ${itemIndex} - Preserving style:`, mediaItem.style);
         }
       });
     }
     
-    // Handle custom layout slides
+    // Handle custom layout slides - preserve ALL styling and positioning
     if (slide.type === 'custom-layout' && slide.layoutSlots) {
-      slide.layoutSlots.forEach(slot => {
+      console.log(`Slide ${slideIndex} - Processing custom layout with ${slide.layoutSlots.length} slots`);
+      
+      slide.layoutSlots.forEach((slot, slotIndex) => {
+        // Preserve all slot properties
+        console.log(`Slide ${slideIndex} - Slot ${slotIndex} - Preserving slot data:`, {
+          id: slot.id,
+          type: slot.type,
+          position: slot.position,
+          size: slot.size,
+          content: slot.content,
+          style: slot.style,
+          objectFit: slot.objectFit,
+          borderRadius: slot.borderRadius,
+          borderWidth: slot.borderWidth,
+          borderColor: slot.borderColor,
+          boxShadow: slot.boxShadow
+        });
+        
+        // Handle media content in slots
         if (slot.content && (slot.type === 'image' || slot.type === 'video') && mediaFileMap[slot.content]) {
-          slot.content = `media/${mediaFileMap[slot.content]}`;
+          // Only add media/ prefix if it's not already there
+          const fileName = mediaFileMap[slot.content];
+          const originalContent = slot.content;
+          slot.content = slot.content.startsWith('media/') ? slot.content : `media/${fileName}`;
+          console.log(`Slide ${slideIndex} - Custom layout slot ${slotIndex}: ${originalContent} -> ${slot.content}`);
+        }
+        
+        // Ensure all styling properties are preserved
+        if (slot.position) {
+          // Preserve exact positioning (pixel values)
+          slot.position = {
+            x: slot.position.x || 0,
+            y: slot.position.y || 0
+          };
+        }
+        
+        if (slot.size) {
+          // Preserve exact sizing (pixel values)
+          slot.size = {
+            width: slot.size.width || 30,
+            height: slot.size.height || 30
+          };
+        }
+        
+        // Preserve all styling properties
+        if (slot.style) {
+          slot.style = { ...slot.style };
+        }
+        
+        // Preserve individual styling properties
+        if (slot.objectFit) {
+          slot.objectFit = slot.objectFit;
+        }
+        if (slot.borderRadius) {
+          slot.borderRadius = slot.borderRadius;
+        }
+        if (slot.borderWidth) {
+          slot.borderWidth = slot.borderWidth;
+        }
+        if (slot.borderColor) {
+          slot.borderColor = slot.borderColor;
+        }
+        if (slot.boxShadow) {
+          slot.boxShadow = slot.boxShadow;
         }
       });
     }
+    
+    // Handle contact slides - preserve contact styling
+    if (slide.type === 'contact') {
+      console.log(`Slide ${slideIndex} - Preserving contact slide data:`, {
+        email: slide.email,
+        phone: slide.phone,
+        website: slide.website
+      });
+    }
+    
+    // Handle title slides - preserve title styling
+    if (slide.type === 'title') {
+      console.log(`Slide ${slideIndex} - Preserving title slide data:`, {
+        title: slide.title,
+        subtitle: slide.subtitle,
+        content: slide.content
+      });
+    }
   });
+  
+  // Preserve presentation-level settings
+  if (processedData.settings) {
+    console.log('Preserving presentation settings:', processedData.settings);
+  }
+  
+  if (processedData.template) {
+    console.log('Preserving template:', processedData.template);
+  }
   
   return processedData;
 }
 
 // Helper functions for generating presentation files
 function generateHTMLViewer(presentationData) {
+  // Helper function to escape HTML content
+  const escapeHtml = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
+  const escapedTitle = escapeHtml(presentationData.title || 'Presentation');
+  
+  // Ensure proper UTF-8 encoding for the presentation data
+  const presentationDataString = JSON.stringify(presentationData, null, 2);
+  const base64Data = Buffer.from(presentationDataString, 'utf8').toString('base64');
+  
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${presentationData.title || 'Presentation'}</title>
+    <title>${escapedTitle}</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -1259,11 +1736,14 @@ function generateHTMLViewer(presentationData) {
     
     <script>
         try {
-            window.presentationData = JSON.parse(atob('${Buffer.from(JSON.stringify(presentationData)).toString('base64')}'));
+            // Decode the base64 data and parse as JSON
+            const base64Data = '${base64Data}';
+            const jsonString = atob(base64Data);
+            window.presentationData = JSON.parse(jsonString);
         } catch (e) {
             console.error('Failed to parse base64 data, trying alternative method:', e);
             // Fallback: embed data directly in a safer way
-            window.presentationData = ${JSON.stringify(presentationData).replace(/</g, '\\u003c').replace(/>/g, '\\u003e')};
+            window.presentationData = ${JSON.stringify(presentationData).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')};
         }
     </script>
     <script src="presentation.js"></script>
@@ -1316,99 +1796,296 @@ body {
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
     text-align: center;
+    background: white;
+    color: #333;
 }
 
 .slide.active {
     opacity: 1;
 }
 
+/* Title Slide Styles */
 .slide-title {
-    font-size: 3rem;
+    font-size: 4rem;
     font-weight: bold;
-    margin-bottom: 1rem;
-    color: #fff;
+    margin-bottom: 2rem;
+    color: #333;
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.2;
 }
 
 .slide-content {
-    font-size: 1.5rem;
+    font-size: 2rem;
     line-height: 1.6;
     max-width: 800px;
     margin: 0 auto;
-    color: #ccc;
+    color: #555;
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .slide-subtitle {
-    font-size: 1.2rem;
-    color: #888;
+    font-size: 2.5rem;
+    color: #666;
     margin-top: 0.5rem;
+    margin-bottom: 2rem;
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
+.slide-body {
+    font-size: 2rem;
+    line-height: 1.6;
+    color: #555;
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Image Slide Styles */
 .slide-image {
     max-width: 100%;
     max-height: 60vh;
     object-fit: contain;
     margin: 20px 0;
     border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
- .video-container {
-     position: relative;
-     width: 100%;
-     max-width: 800px;
-     margin: 20px auto;
+.image-error {
+    background: rgba(255, 107, 107, 0.1);
+    border: 2px dashed rgba(255, 107, 107, 0.3);
+    border-radius: 12px;
+    margin: 1rem 0;
+    padding: 2rem;
+    color: #ff6b6b;
+    text-align: center;
+}
+
+.image-error div {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* Video Slide Styles */
+.video-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 20px auto;
 }
 
 .slide-video {
-      width: 100%;
+    width: 100%;
     max-height: 60vh;
     border-radius: 8px;
-      background: #000;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      pointer-events: auto !important;
-      z-index: 1000;
-      position: relative;
-  }
-  
-  .slide-video::-webkit-media-controls {
-      background: rgba(0, 0, 0, 0.7) !important;
-      pointer-events: auto !important;
-  }
-  
-  .slide-video::-webkit-media-controls-panel {
-      background: rgba(0, 0, 0, 0.8) !important;
-      pointer-events: auto !important;
-  }
-  
-  .slide-video::-webkit-media-controls-play-button {
-      pointer-events: auto !important;
-  }
-  
-  .slide-video::-webkit-media-controls-timeline {
-      pointer-events: auto !important;
-  }
-  
-  .slide-video::-webkit-media-controls-volume-slider {
-      pointer-events: auto !important;
-  }
-  
-  .slide-video::-webkit-media-controls-fullscreen-button {
-      pointer-events: auto !important;
+    background: #000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    pointer-events: auto !important;
+    z-index: 1000;
+    position: relative;
+    object-fit: contain;
 }
 
+.slide-video::-webkit-media-controls {
+    background: rgba(0, 0, 0, 0.7) !important;
+    pointer-events: auto !important;
+}
+
+.slide-video::-webkit-media-controls-panel {
+    background: rgba(0, 0, 0, 0.8) !important;
+    pointer-events: auto !important;
+}
+
+.slide-video::-webkit-media-controls-play-button {
+    pointer-events: auto !important;
+}
+
+.slide-video::-webkit-media-controls-timeline {
+    pointer-events: auto !important;
+}
+
+.slide-video::-webkit-media-controls-volume-slider {
+    pointer-events: auto !important;
+}
+
+.slide-video::-webkit-media-controls-fullscreen-button {
+    pointer-events: auto !important;
+}
+
+.video-error {
+    background: rgba(255, 107, 107, 0.1);
+    border: 2px dashed rgba(255, 107, 107, 0.3);
+    border-radius: 12px;
+    margin: 1rem 0;
+    padding: 2rem;
+    color: #ff6b6b;
+    text-align: center;
+}
+
+.video-error div {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* Contact Slide Styles */
 .contact-info {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 1rem;
+    margin-top: 2rem;
+    font-size: 1.5rem;
+    line-height: 2;
 }
 
 .contact-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 1.1rem;
+    gap: 1rem;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
 }
 
+.contact-icon {
+    font-size: 2rem;
+}
+
+.contact-value {
+    word-break: break-all;
+    font-size: 1.5rem;
+}
+
+/* Multi-Media Slide Styles */
+.multi-media-container {
+    position: relative;
+    width: 100%;
+    height: 60%;
+    margin-top: 2rem;
+}
+
+.media-item {
+    position: absolute;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.media-item img,
+.media-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+/* Custom Layout Slide Styles */
+.custom-layout-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+}
+
+.layout-slot {
+    position: absolute;
+    border: 1px solid #ccc;
+    padding: 8px;
+    background-color: rgba(255, 255, 255, 0.9);
+    overflow: hidden;
+    z-index: 1;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* Allow custom styling to override defaults */
+    transition: all 0.3s ease;
+}
+
+.layout-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    /* Allow custom object-fit to override */
+}
+
+.layout-slot video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.slot-text {
+    font-size: 0.9rem;
+    line-height: 1.2;
+    padding: 8px;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    /* Allow custom text styling */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.slot-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 0.8rem;
+    color: #999;
+    background-color: rgba(0, 123, 255, 0.1);
+    border: 2px dashed #ccc;
+}
+
+/* Enhanced styling support for custom layouts */
+.layout-slot[style*="background-color"] {
+    /* Custom background colors will override default */
+}
+
+.layout-slot[style*="border"] {
+    /* Custom borders will override default */
+}
+
+.layout-slot[style*="border-radius"] {
+    /* Custom border radius will override default */
+}
+
+.layout-slot[style*="box-shadow"] {
+    /* Custom box shadows will override default */
+}
+
+.layout-slot[style*="padding"] {
+    /* Custom padding will override default */
+}
+
+.layout-slot[style*="margin"] {
+    /* Custom margins will override default */
+}
+
+/* Controls */
 .controls {
     position: absolute;
     bottom: 30px;
@@ -1470,17 +2147,26 @@ body {
     backdrop-filter: blur(10px);
 }
 
+/* Responsive Design */
 @media (max-width: 768px) {
     .slide {
         padding: 40px 20px;
     }
     
     .slide-title {
-        font-size: 2rem;
+        font-size: 2.5rem;
     }
     
     .slide-content {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
+    }
+    
+    .slide-subtitle {
+        font-size: 1.8rem;
+    }
+    
+    .slide-body {
+        font-size: 1.5rem;
     }
     
     .controls {
@@ -1491,18 +2177,83 @@ body {
     .control-btn {
         font-size: 1.5rem;
     }
+    
+    .contact-info {
+        font-size: 1.2rem;
+    }
+    
+    .contact-item {
+        font-size: 1.2rem;
+    }
+    
+    .contact-icon {
+        font-size: 1.5rem;
+    }
+    
+    .contact-value {
+        font-size: 1.2rem;
+    }
 }
 
-.image-error, .video-error {
-    background: rgba(255, 107, 107, 0.1);
-    border: 2px dashed rgba(255, 107, 107, 0.3);
-    border-radius: 12px;
-    margin: 1rem 0;
+/* iPad-specific optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .slide {
+        padding: 80px 60px;
+    }
+    
+    .slide-title {
+        font-size: 3.5rem;
+    }
+    
+    .slide-content {
+        font-size: 1.8rem;
+    }
+    
+    .slide-subtitle {
+        font-size: 2.2rem;
+    }
+    
+    .slide-body {
+        font-size: 1.8rem;
+    }
 }
 
-    .image-error div, .video-error div {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }`;
+/* High-resolution displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .slide-title,
+    .slide-content,
+    .slide-subtitle,
+    .slide-body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .control-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .fullscreen-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+/* Print styles */
+@media print {
+    .controls,
+    .fullscreen-btn {
+        display: none;
+    }
+    
+    .slide {
+        page-break-after: always;
+        opacity: 1;
+    }
+}`;
 }
 
 function generateReadmeContent(presentationData) {
@@ -1587,6 +2338,14 @@ function generatePresentationJS() {
         this.init();
     }
     
+    // Helper function to escape HTML content
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
     init() {
         console.log('Initializing presentation with', this.data.slides.length, 'slides');
         this.renderSlides();
@@ -1620,80 +2379,80 @@ function generatePresentationJS() {
             switch (slide.type) {
                 case 'title':
                     slideContent = \`
-                        <h1 class="slide-title">\${slide.title || ''}</h1>
-                        <div class="slide-content">\${slide.content || ''}</div>
-                        \${slide.subtitle ? \`<div class="slide-subtitle">\${slide.subtitle}</div>\` : ''}
+                        <h1 class="slide-title">\${this.escapeHtml(slide.title || '')}</h1>
+                        \${slide.subtitle ? \`<div class="slide-subtitle">\${this.escapeHtml(slide.subtitle)}</div>\` : ''}
+                        \${slide.content ? \`<div class="slide-body">\${this.escapeHtml(slide.content)}</div>\` : ''}
                     \`;
                     break;
                     
                 case 'content':
                     slideContent = \`
-                        <h2 class="slide-title">\${slide.title || ''}</h2>
-                        <div class="slide-content">\${slide.content || ''}</div>
+                        <h2 class="slide-title">\${this.escapeHtml(slide.title || '')}</h2>
+                        <div class="slide-body">\${this.escapeHtml(slide.content || '')}</div>
                     \`;
                     break;
                     
                 case 'image':
                     slideContent = \`
-                        <h2 class="slide-title">\${slide.title || ''}</h2>
+                        <h2 class="slide-title">\${this.escapeHtml(slide.title || '')}</h2>
                         \${slide.imageUrl ? \`
-                            <img src="media/\${slide.imageUrl.includes('/uploads/') ? slide.imageUrl.split('/uploads/')[1] : slide.imageUrl.replace('/uploads/', '')}" 
-                                 alt="\${slide.title}" 
+                            <img src="\${slide.imageUrl.startsWith('media/') ? slide.imageUrl : 'media/' + (slide.imageUrl.includes('/uploads/') ? slide.imageUrl.split('/uploads/')[1] : slide.imageUrl.replace('/uploads/', ''))}" 
+                                 alt="\${this.escapeHtml(slide.title || '')}" 
                                  class="slide-image"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                             <div class="image-error" style="display: none; color: #ff6b6b; text-align: center; padding: 2rem;">
                                 <div style="font-size: 3rem; margin-bottom: 1rem;">🖼️</div>
                                 <div>Image not available</div>
-                                <div style="font-size: 0.9rem; margin-top: 0.5rem;">media/\${slide.imageUrl.includes('/uploads/') ? slide.imageUrl.split('/uploads/')[1] : slide.imageUrl.replace('/uploads/', '')}</div>
+                                <div style="font-size: 0.9rem; margin-top: 0.5rem;">\${slide.imageUrl.startsWith('media/') ? slide.imageUrl : 'media/' + (slide.imageUrl.includes('/uploads/') ? slide.imageUrl.split('/uploads/')[1] : slide.imageUrl.replace('/uploads/', ''))}</div>
                             </div>
                         \` : ''}
-                        \${slide.content ? \`<div class="slide-content">\${slide.content}</div>\` : ''}
+                        \${slide.content ? \`<div class="slide-body">\${this.escapeHtml(slide.content)}</div>\` : ''}
                     \`;
                     break;
                     
                 case 'video':
                     slideContent = \`
-                        <h2 class="slide-title">\${slide.title || ''}</h2>
+                        <h2 class="slide-title">\${this.escapeHtml(slide.title || '')}</h2>
                         \${slide.videoUrl ? \`
                             <div class="video-container">
                                 <video class="slide-video" controls preload="metadata" playsinline
                                        style="pointer-events: auto; z-index: 1000;"
                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
                                        onloadedmetadata="console.log('Video loaded:', this.videoWidth, 'x', this.videoHeight); this.style.pointerEvents='auto';">
-                                    <source src="media/\${slide.videoUrl.includes('/uploads/') ? slide.videoUrl.split('/uploads/')[1] : slide.videoUrl.replace('/uploads/', '')}" type="video/mp4">
+                                    <source src="\${slide.videoUrl.startsWith('media/') ? slide.videoUrl : 'media/' + (slide.videoUrl.includes('/uploads/') ? slide.videoUrl.split('/uploads/')[1] : slide.videoUrl.replace('/uploads/', ''))}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                                 <div class="video-error" style="display: none; color: #ff6b6b; text-align: center; padding: 2rem;">
                                     <div style="font-size: 3rem; margin-bottom: 1rem;">🎥</div>
                                     <div>Video not available</div>
-                                    <div style="font-size: 0.9rem; margin-top: 0.5rem;">media/\${slide.videoUrl.includes('/uploads/') ? slide.videoUrl.split('/uploads/')[1] : slide.videoUrl.replace('/uploads/', '')}</div>
+                                    <div style="font-size: 0.9rem; margin-top: 0.5rem;">\${slide.videoUrl.startsWith('media/') ? slide.videoUrl : 'media/' + (slide.videoUrl.includes('/uploads/') ? slide.videoUrl.split('/uploads/')[1] : slide.videoUrl.replace('/uploads/', ''))}</div>
                                 </div>
                             </div>
                         \` : ''}
-                        \${slide.content ? \`<div class="slide-content">\${slide.content}</div>\` : ''}
+                        \${slide.content ? \`<div class="slide-body">\${this.escapeHtml(slide.content)}</div>\` : ''}
                     \`;
                     break;
                     
                 case 'contact':
                     slideContent = \`
-                        <h2 class="slide-title">\${slide.title || ''}</h2>
+                        <h2 class="slide-title">\${this.escapeHtml(slide.title || '')}</h2>
                         <div class="contact-info">
                             \${slide.email ? \`
                                 <div class="contact-item">
-                                    <span>📧</span>
-                                    <span>\${slide.email}</span>
+                                    <span class="contact-icon">📧</span>
+                                    <span class="contact-value">\${this.escapeHtml(slide.email)}</span>
                                 </div>
                             \` : ''}
                             \${slide.phone ? \`
                                 <div class="contact-item">
-                                    <span>📞</span>
-                                    <span>\${slide.phone}</span>
+                                    <span class="contact-icon">📞</span>
+                                    <span class="contact-value">\${this.escapeHtml(slide.phone)}</span>
                                 </div>
                             \` : ''}
                             \${slide.website ? \`
                                 <div class="contact-item">
-                                    <span>🌐</span>
-                                    <span>\${slide.website}</span>
+                                    <span class="contact-icon">🌐</span>
+                                    <span class="contact-value">\${this.escapeHtml(slide.website)}</span>
                                 </div>
                             \` : ''}
                         </div>
@@ -1702,15 +2461,17 @@ function generatePresentationJS() {
                     
                 case 'multi-media':
                     const mediaItemsHTML = slide.mediaItems ? slide.mediaItems.map(item => {
-                        const mediaUrl = item.url.includes('/uploads/') ? 
-                            \`media/\${item.url.split('/uploads/')[1]}\` : 
-                            \`media/\${item.url.replace('/uploads/', '')}\`;
+                        const mediaUrl = item.url.startsWith('media/') ? 
+                            item.url : 
+                            (item.url.includes('/uploads/') ? 
+                                \`media/\${item.url.split('/uploads/')[1]}\` : 
+                                \`media/\${item.url.replace('/uploads/', '')}\`);
                         
                         if (item.type === 'image') {
                             return \`
                                 <div class="media-item" style="position: absolute; left: \${item.position.x}%; top: \${item.position.y}%; width: \${item.position.width}%; height: \${item.position.height}%;">
-                                    <img src="\${mediaUrl}" alt="\${item.caption || 'Media item'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
-                                    \${item.caption ? \`<div class="media-caption">\${item.caption}</div>\` : ''}
+                                    <img src="\${mediaUrl}" alt="\${this.escapeHtml(item.caption || 'Media item')}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                                    \${item.caption ? \`<div class="media-caption">\${this.escapeHtml(item.caption)}</div>\` : ''}
                                 </div>
                             \`;
                         } else if (item.type === 'video') {
@@ -1720,7 +2481,7 @@ function generatePresentationJS() {
                                         <source src="\${mediaUrl}" type="video/mp4">
                                         Your browser does not support the video tag.
                                     </video>
-                                    \${item.caption ? \`<div class="media-caption">\${item.caption}</div>\` : ''}
+                                    \${item.caption ? \`<div class="media-caption">\${this.escapeHtml(item.caption)}</div>\` : ''}
                                 </div>
                             \`;
                         }
@@ -1728,66 +2489,100 @@ function generatePresentationJS() {
                     }).join('') : '';
                     
                     slideContent = \`
-                        <h2 class="slide-title">\${slide.title || ''}</h2>
-                        <div class="slide-content">\${slide.content || ''}</div>
-                        <div class="multi-media-container" style="position: relative; width: 100%; height: 60%; margin-top: 2rem;">
+                        <h2 class="slide-title">\${this.escapeHtml(slide.title || '')}</h2>
+                        \${slide.content ? \`<div class="slide-body">\${this.escapeHtml(slide.content)}</div>\` : ''}
+                        <div class="multi-media-container">
                             \${mediaItemsHTML}
+                        </div>
+                    \`;
+                    break;
+                    
+                case 'custom-layout':
+                    const layoutSlotsHTML = slide.layoutSlots ? slide.layoutSlots.map(slot => {
+                        // Convert pixel coordinates to percentages based on 800x600 design canvas
+                        const designCanvasWidth = 800;
+                        const designCanvasHeight = 600;
+                        
+                        let x = slot.position?.x || 0;
+                        let y = slot.position?.y || 0;
+                        let width = slot.size?.width || 30;
+                        let height = slot.size?.height || 30;
+                        
+                        // Convert pixel coordinates to percentages
+                        x = (x / designCanvasWidth) * 100;
+                        y = (y / designCanvasHeight) * 100;
+                        width = (width / designCanvasWidth) * 100;
+                        height = (height / designCanvasHeight) * 100;
+                        
+                        let slotContent = '';
+                        
+                        if (slot.type === 'image' && slot.content) {
+                            const mediaUrl = slot.content.startsWith('media/') ? 
+                                slot.content : 
+                                (slot.content.includes('/uploads/') ? 
+                                    \`media/\${slot.content.split('/uploads/')[1]}\` : 
+                                    \`media/\${slot.content.replace('/uploads/', '')}\`);
+                            slotContent = \`
+                                <img src="\${mediaUrl}" alt="Slot content" style="width: 100%; height: 100%; object-fit: \${slot.objectFit || 'cover'}; border-radius: \${slot.borderRadius ? slot.borderRadius + 'px' : '0'}; border: \${slot.borderWidth ? slot.borderWidth + 'px solid ' + (slot.borderColor || '#000000') : 'none'}; box-shadow: \${slot.boxShadow === 'small' ? '0 2px 4px rgba(0,0,0,0.1)' : slot.boxShadow === 'medium' ? '0 4px 8px rgba(0,0,0,0.15)' : slot.boxShadow === 'large' ? '0 8px 16px rgba(0,0,0,0.2)' : 'none'};">
+                            \`;
+                        } else if (slot.type === 'video' && slot.content) {
+                            const mediaUrl = slot.content.startsWith('media/') ? 
+                                slot.content : 
+                                (slot.content.includes('/uploads/') ? 
+                                    \`media/\${slot.content.split('/uploads/')[1]}\` : 
+                                    \`media/\${slot.content.replace('/uploads/', '')}\`);
+                            slotContent = \`
+                                <video controls style="width: 100%; height: 100%; object-fit: cover;">
+                                    <source src="\${mediaUrl}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            \`;
+                        } else if (slot.type === 'text' && slot.content) {
+                            slotContent = \`
+                                <div class="slot-text">\${this.escapeHtml(slot.content)}</div>
+                            \`;
+                        } else {
+                            slotContent = \`
+                                <div class="slot-placeholder">\${this.escapeHtml(slot.type)} slot</div>
+                            \`;
+                        }
+                        
+                        // Apply slot-specific styling
+                        let slotStyle = \`position: absolute; left: \${x}%; top: \${y}%; width: \${width}%; height: \${height}%; z-index: 1;\`;
+                        
+                        // Add custom styling if available
+                        if (slot.style) {
+                            if (slot.style.backgroundColor) slotStyle += \` background-color: \${slot.style.backgroundColor};\`;
+                            if (slot.style.border) slotStyle += \` border: \${slot.style.border};\`;
+                            if (slot.style.borderRadius) slotStyle += \` border-radius: \${slot.style.borderRadius}px;\`;
+                            if (slot.style.boxShadow) slotStyle += \` box-shadow: \${slot.style.boxShadow};\`;
+                            if (slot.style.padding) slotStyle += \` padding: \${slot.style.padding};\`;
+                            if (slot.style.margin) slotStyle += \` margin: \${slot.style.margin};\`;
+                        }
+                        
+                        return \`
+                            <div class="layout-slot" style="\${slotStyle}">
+                                \${slotContent}
+                            </div>
+                        \`;
+                    }).join('') : '';
+                    
+                    slideContent = \`
+                        <div class="custom-layout-container">
+                            \${layoutSlotsHTML}
                         </div>
                     \`;
                     break;
                     
                 default:
                     slideContent = \`
-                        <h2 class="slide-title">\${slide.title || ''}</h2>
-                        <div class="slide-content">\${slide.content || ''}</div>
+                        <h2 class="slide-title">\${this.escapeHtml(slide.title || '')}</h2>
+                        <div class="slide-body">\${this.escapeHtml(slide.content || '')}</div>
                     \`;
             }
             
             slideElement.innerHTML = slideContent;
             container.appendChild(slideElement);
-             
-                           // Add video event listeners after the element is in the DOM
-              if (slide.type === 'video' && slide.videoUrl) {
-                  const video = slideElement.querySelector('video');
-                  if (video) {
-                      // Ensure video controls are accessible
-                      video.addEventListener('loadedmetadata', () => {
-                          console.log('Video metadata loaded:', video.videoWidth, 'x', video.videoHeight);
-                          video.style.pointerEvents = 'auto';
-                      });
-                      
-                      video.addEventListener('play', () => {
-                          console.log('Video started playing');
-                      });
-                      
-                      video.addEventListener('pause', () => {
-                          console.log('Video paused');
-                      });
-                      
-                      video.addEventListener('error', (e) => {
-                          console.error('Video error:', e);
-                      });
-                      
-                      // Force enable controls
-                      video.controls = true;
-                      video.style.pointerEvents = 'auto';
-                      
-                      // Add click handler to ensure controls work
-                      video.addEventListener('click', (e) => {
-                          e.stopPropagation();
-                          console.log('Video clicked');
-                      });
-                      
-                      // Prevent any parent elements from interfering
-                      video.addEventListener('mousedown', (e) => {
-                          e.stopPropagation();
-                      });
-                      
-                      video.addEventListener('touchstart', (e) => {
-                          e.stopPropagation();
-                      });
-                  }
-              }
         });
     }
     
@@ -1805,12 +2600,6 @@ function generatePresentationJS() {
     
     setupKeyboardControls() {
         document.addEventListener('keydown', (e) => {
-             // Don't interfere with video controls when video is focused
-             const activeVideo = document.querySelector('video:focus');
-             if (activeVideo) {
-                 return;
-             }
-             
             switch (e.key) {
                 case 'ArrowLeft':
                 case 'ArrowUp':
@@ -1835,23 +2624,11 @@ function generatePresentationJS() {
         let startY = 0;
         
         document.addEventListener('touchstart', (e) => {
-             // Don't interfere with video controls
-             if (e.target.closest('video') || e.target.closest('.video-container')) {
-                 return;
-             }
-             
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
         });
         
         document.addEventListener('touchend', (e) => {
-             // Don't interfere with video controls
-             if (e.target.closest('video') || e.target.closest('.video-container')) {
-                 startX = 0;
-                 startY = 0;
-                 return;
-             }
-             
             if (!startX || !startY) return;
             
             const endX = e.changedTouches[0].clientX;
@@ -1969,27 +2746,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error('No presentation data found!');
     }
-});
-`;
-}
+});`;
+} 
 
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error(error.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+// Start the server
+const PORT = config.PORT || 5001;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Server URL: http://localhost:${PORT}`);
+    console.log(`API Base URL: http://localhost:${PORT}/api`);
 });
-
-app.listen(config.PORT, () => {
-  console.log(`Server running on port ${config.PORT}`);
-}).on('error', (error) => {
-  console.error('Server error:', error);
-});
-
-// Keep the process alive
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-}); 
