@@ -16,7 +16,11 @@
     "sync": "npx cap sync",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "startup": "node startup.js",
+    "startup:mac": "chmod +x startup.sh && ./startup.sh",
+    "startup:linux": "chmod +x startup.sh && ./startup.sh",
+    "startup:windows": "startup.bat"
   },
   "keywords": ["capacitor", "presentation", "player", "ipad", "ios"],
   "author": "PitchPerfect Team",

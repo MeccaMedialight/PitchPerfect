@@ -64,6 +64,189 @@ cd server
 npm start
 ```
 
+### Startup Scripts
+
+The application includes comprehensive startup scripts that automatically handle dependency installation, process management, and health checks. These scripts work on Windows, Mac, and Linux.
+
+#### Prerequisites
+
+1. **Node.js 16+ and npm** must be installed
+2. **Required files** must be present in the project structure
+3. **Network access** for downloading dependencies
+
+#### Using Startup Scripts
+
+**Cross-Platform (Recommended):**
+```bash
+# Uses Node.js script that works on all platforms
+npm run startup
+```
+
+**Platform-Specific:**
+```bash
+# Mac/Linux
+npm run startup:mac
+npm run startup:linux
+
+# Windows
+npm run startup:windows
+```
+
+**Direct Script Execution:**
+```bash
+# Node.js script (cross-platform)
+node startup.js
+
+# Shell script (Mac/Linux)
+chmod +x startup.sh
+./startup.sh
+
+# Batch script (Windows)
+startup.bat
+```
+
+#### What the Startup Scripts Do
+
+1. **Environment Check**
+   - ✅ Verify Node.js version (16+ required)
+   - ✅ Verify npm is installed
+   - ✅ Check for required project files
+
+2. **Process Management**
+   - 🔄 Stop any existing processes on ports 3000 and 5001
+   - 🧹 Clean up zombie processes
+   - ⏱️ Wait for proper termination
+
+3. **Dependency Management**
+   - 📦 Check if dependencies are installed
+   - 🔄 Install missing dependencies automatically
+   - ✅ Verify installation success
+
+4. **Application Startup**
+   - 🚀 Start server in background
+   - 🚀 Start client in background
+   - ⏱️ Wait for services to initialize
+
+5. **Health Checks**
+   - 🔍 Verify server is responding on port 5001
+   - 🔍 Verify client is responding on port 3000
+   - 📊 Generate comprehensive health report
+
+6. **Reporting**
+   - 📄 Create JSON report (`startup-report.json`)
+   - 📄 Create human-readable report (`startup-report.txt`)
+   - 🎯 Provide detailed error information
+
+#### Startup Report Files
+
+The scripts generate two report files:
+
+**`startup-report.json`** - Machine-readable JSON report:
+```json
+{
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "platform": "win32",
+  "nodeVersion": "v18.17.0",
+  "results": {
+    "nodeCheck": {"success": true},
+    "npmCheck": {"success": true},
+    "filesCheck": {"success": true},
+    "processCleanup": {"success": true, "message": "Process cleanup completed"},
+    "rootDeps": {"success": true, "message": "Root dependencies ready"},
+    "serverDeps": {"success": true, "message": "Server dependencies ready"},
+    "clientDeps": {"success": true, "message": "Client dependencies ready"},
+    "serverStart": {"success": true, "message": "Server started successfully"},
+    "clientStart": {"success": true, "message": "Client started successfully"},
+    "finalHealth": {"success": true, "message": "Server: OK, Client: OK"}
+  }
+}
+```
+
+**`startup-report.txt`** - Human-readable text report:
+```
+PitchPerfect Startup Report
+Generated: 2024-01-15T10:30:00.000Z
+Platform: win32
+Node Version: v18.17.0
+
+nodeCheck: SUCCESS
+npmCheck: SUCCESS
+filesCheck: SUCCESS
+  All required files found
+processCleanup: SUCCESS
+  Process cleanup completed
+rootDeps: SUCCESS
+  Root dependencies ready
+serverDeps: SUCCESS
+  Server dependencies ready
+clientDeps: SUCCESS
+  Client dependencies ready
+serverStart: SUCCESS
+  Server started successfully
+clientStart: SUCCESS
+  Client started successfully
+finalHealth: SUCCESS
+  Server: OK, Client: OK
+```
+
+#### Troubleshooting Startup Issues
+
+**Common Issues and Solutions:**
+
+1. **Node.js Version Too Old**
+   ```
+   ERROR: Node.js version v14.17.0 is too old. Please install Node.js 16 or higher.
+   ```
+   **Solution:** Update Node.js to version 16 or higher
+
+2. **Missing Dependencies**
+   ```
+   WARNING: node_modules not found in server
+   ```
+   **Solution:** The script will automatically install missing dependencies
+
+3. **Port Already in Use**
+   ```
+   WARNING: Port 5001 is in use, killing existing process...
+   ```
+   **Solution:** The script automatically handles this by stopping existing processes
+
+4. **Permission Issues (Mac/Linux)**
+   ```bash
+   # Make script executable
+   chmod +x startup.sh
+   ```
+
+5. **Windows Execution Policy**
+   ```powershell
+   # Run PowerShell as Administrator
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+#### Advanced Usage
+
+**Custom Configuration:**
+```bash
+# Set custom ports (if needed)
+export SERVER_PORT=5002
+export CLIENT_PORT=3001
+node startup.js
+```
+
+**Verbose Mode:**
+```bash
+# Enable detailed logging
+export DEBUG=true
+npm run startup
+```
+
+**Skip Dependency Installation:**
+```bash
+# Only start services (assumes dependencies are installed)
+export SKIP_INSTALL=true
+npm run startup
+```
+
 ### Restart Scripts
 
 The application includes intelligent restart scripts that read your `.env` configuration and properly stop/start the client and server processes.
