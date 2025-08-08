@@ -14,33 +14,54 @@
 .toolbar {
   display: flex;
   align-items: center;
-  padding: 0.5rem;
+  padding: 0.25rem;
   background: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
-  gap: 0.25rem;
+  gap: 0.125rem;
   flex-wrap: wrap;
 }
 
+/* Font Manager Panel */
+.font-manager-panel {
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.font-manager-panel .custom-font-upload {
+  margin-top: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+}
+
+/* Enhanced toolbar for font management */
 .toolbar-group {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0 0.25rem;
+  gap: 0.125rem;
+  padding: 0 0.125rem;
+  flex-wrap: wrap;
 }
 
 .toolbar-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border: 1px solid transparent;
   background: transparent;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
   color: #666;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
+}
+
+.toolbar-btn svg {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .toolbar-btn:hover {
@@ -62,9 +83,9 @@
 
 .toolbar-separator {
   width: 1px;
-  height: 24px;
+  height: 18px;
   background: #dee2e6;
-  margin: 0 0.25rem;
+  margin: 0 0.125rem;
 }
 
 .toolbar-select-wrapper {
@@ -75,22 +96,23 @@
 
 .toolbar-select-icon {
   position: absolute;
-  left: 8px;
+  left: 6px;
   color: #666;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   pointer-events: none;
   z-index: 1;
 }
 
+/* Enhanced font select styling */
 .toolbar-select {
-  padding: 0.25rem 0.5rem 0.25rem 1.75rem;
+  padding: 0.125rem 0.25rem 0.125rem 1.25rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 3px;
   background: white;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   cursor: pointer;
-  min-width: 80px;
-  height: 32px;
+  min-width: 60px;
+  height: 24px;
   transition: border-color 0.2s ease;
 }
 
@@ -104,14 +126,27 @@
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
+.toolbar-select optgroup {
+  font-weight: 600;
+  color: #333;
+  background: #f8f9fa;
+}
+
+.toolbar-select option {
+  font-weight: normal;
+  color: #333;
+  background: white;
+  padding: 0.25rem;
+}
+
 .toolbar-color-picker {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
   background: white;
-  padding: 2px;
+  padding: 1px;
 }
 
 .toolbar-color-picker:hover {
@@ -119,8 +154,8 @@
 }
 
 .editor-content {
-  min-height: 120px; /* At least 5 lines (24px line-height * 5 = 120px) */
-  max-height: 400px;
+  min-height: 144px !important; /* At least 5 lines: (16px font × 1.5 line-height × 5 lines) + (12px padding × 2) = 120px + 24px = 144px */
+  max-height: 600px; /* Increased from 400px */
   overflow-y: auto;
   padding: 0.75rem;
   outline: none;
@@ -208,25 +243,49 @@
   }
   
   .toolbar-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
   }
   
   .toolbar-select {
     min-width: 60px;
-    height: 28px;
-    font-size: 0.75rem;
+    height: 24px;
+    font-size: 0.7rem;
   }
   
   .toolbar-color-picker {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
   
   .editor-content {
-    min-height: 100px;
+    min-height: 150px !important;
     padding: 0.5rem;
     font-size: 0.9rem;
+  }
+} 
+
+/* Responsive design for font manager */
+@media (max-width: 768px) {
+  .font-manager-panel {
+    padding: 0.5rem;
+  }
+  
+  .toolbar-group {
+    gap: 0.125rem;
+    padding: 0 0.125rem;
+  }
+  
+  .toolbar-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+  
+  .toolbar-select {
+    min-width: 60px;
+    height: 24px;
+    font-size: 0.7rem;
   }
 } 

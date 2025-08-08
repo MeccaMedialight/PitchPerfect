@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   FaBold, FaItalic, FaUnderline, FaAlignLeft, FaAlignCenter, FaAlignRight, FaAlignJustify,
-  FaFont, FaTextHeight, FaPalette, FaListUl, FaListOl, FaQuoteLeft, FaStrikethrough
+  FaFont, FaTextHeight, FaPalette, FaListUl, FaListOl, FaQuoteLeft, FaStrikethrough, FaCog
 } from 'react-icons/fa';
+import fontManager from '../utils/fontManager';
+import CustomFontUpload from './CustomFontUpload';
 import './RichTextEditor.css';
 
 const RichTextEditor = ({ value, onChange, placeholder, className }) => {
   const editorRef = useRef(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [categorizedFonts, setCategorizedFonts] = useState({});
+  const [showFontManager, setShowFontManager] = useState(false);
 
   useEffect(() => {
     if (editorRef.current && value !== editorRef.current.innerHTML) {
@@ -21,6 +25,13 @@ const RichTextEditor = ({ value, onChange, placeholder, className }) => {
       editorRef.current.setAttribute('data-placeholder', placeholder);
     }
   }, [placeholder]);
+
+  // Load fonts
+  useEffect(() => {
+    const allFonts = fontManager.getAllFonts();
+    const categorized = fontManager.getFontsByCategory();
+    setCategorizedFonts(categorized);
+  }, []);
 
   // Handle content synchronization
   useEffect(() => {
@@ -50,6 +61,20 @@ const RichTextEditor = ({ value, onChange, placeholder, className }) => {
       selection.removeAllRanges();
       selection.addRange(range);
     }
+  };
+
+  const handleFontAdded = (customFont) => {
+    // Reload fonts after adding a custom font
+    const allFonts = fontManager.getAllFonts();
+    const categorized = fontManager.getFontsByCategory();
+    setCategorizedFonts(categorized);
+  };
+
+  const handleFontRemoved = (fontValue) => {
+    // Reload fonts after removing a custom font
+    const allFonts = fontManager.getAllFonts();
+    const categorized = fontManager.getFontsByCategory();
+    setCategorizedFonts(categorized);
   };
 
   const execCommand = (command, value = null) => {
@@ -150,7 +175,7 @@ const RichTextEditor = ({ value, onChange, placeholder, className }) => {
     }
   };
 
-  const ToolbarButton = ({ command, icon, title, value = null, children = null }) => {
+  const ToolbarButton = ({ command, icon, title, value = null, children = null, onClick = null }) => {
     const [isActive, setIsActive] = useState(false);
 
     useEffect(() => {
@@ -164,11 +189,19 @@ const RichTextEditor = ({ value, onChange, placeholder, className }) => {
       return () => document.removeEventListener('selectionchange', updateActiveState);
     }, [command]);
 
+    const handleClick = () => {
+      if (onClick) {
+        onClick();
+      } else {
+        execCommand(command, value);
+      }
+    };
+
     return (
       <button
         type="button"
         className={`toolbar-btn ${isActive ? 'active' : ''}`}
-        onClick={() => execCommand(command, value)}
+        onClick={handleClick}
         title={title}
       >
         {icon}
@@ -178,29 +211,25 @@ const RichTextEditor = ({ value, onChange, placeholder, className }) => {
   };
 
   const FontSelect = () => {
-    const fonts = [
-      { value: 'Arial', label: 'Arial' },
-      { value: 'Helvetica', label: 'Helvetica' },
-      { value: 'Times New Roman', label: 'Times New Roman' },
-      { value: 'Georgia', label: 'Georgia' },
-      { value: 'Verdana', label: 'Verdana' },
-      { value: 'Courier New', label: 'Courier New' },
-      { value: 'Impact', label: 'Impact' },
-      { value: 'Comic Sans MS', label: 'Comic Sans MS' },
-      { value: 'Tahoma', label: 'Tahoma' },
-      { value: 'Trebuchet MS', label: 'Trebuchet MS' }
-    ];
-
     return (
       <select
         className="toolbar-select"
         onChange={(e) => execCommand('fontName', e.target.value)}
         title="Font Family"
       >
-        {fonts.map(font => (
-          <option key={font.value} value={font.value} style={{ fontFamily: font.value }}>
-            {font.label}
-          </option>
+        <option value="">Select Font</option>
+        {Object.entries(categorizedFonts).map(([category, categoryFonts]) => (
+          <optgroup key={category} label={category}>
+            {categoryFonts.map(font => (
+              <option 
+                key={font.value} 
+                value={font.value} 
+                style={{ fontFamily: font.value }}
+              >
+                {font.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
     );
@@ -270,6 +299,12 @@ const RichTextEditor = ({ value, onChange, placeholder, className }) => {
             <FaPalette className="toolbar-select-icon" />
             <ColorPicker />
           </div>
+          <ToolbarButton 
+            command="fontManager" 
+            icon={<FaCog />} 
+            title="Font Manager"
+            onClick={() => setShowFontManager(!showFontManager)}
+          />
         </div>
 
         <div className="toolbar-separator" />
@@ -291,6 +326,16 @@ const RichTextEditor = ({ value, onChange, placeholder, className }) => {
           <ToolbarButton command="formatBlock" icon={<FaQuoteLeft />} title="Quote Block" value="blockquote" />
         </div>
       </div>
+
+      {/* Font Manager Panel */}
+      {showFontManager && (
+        <div className="font-manager-panel">
+          <CustomFontUpload 
+            onFontAdded={handleFontAdded}
+            onFontRemoved={handleFontRemoved}
+          />
+        </div>
+      )}
 
       <div
         ref={editorRef}

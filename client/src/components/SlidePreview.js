@@ -36,8 +36,12 @@ const SlidePreview = ({ slide, isActive = false, slideNumber, isIPadPreview = fa
           <div className={`${styles.slideContent} ${styles.titleSlide}`}>
             <h1 className={styles.slideTitle}>{slide.title || 'Title'}</h1>
             <div className={styles.slideSubtitle}>{slide.subtitle || 'Subtitle'}</div>
-            {slide.content && <div className={styles.slideBody}>{slide.content}</div>}
-            
+            {slide.content && (
+              <div 
+                className={styles.slideBody}
+                dangerouslySetInnerHTML={{ __html: slide.content }}
+              />
+            )}
           </div>
         );
 
@@ -55,7 +59,12 @@ const SlidePreview = ({ slide, isActive = false, slideNumber, isIPadPreview = fa
                 <span>No image selected</span>
               </div>
             )}
-            {slide.content && <div className={styles.slideBody}>{slide.content}</div>}
+            {slide.content && (
+              <div 
+                className={styles.slideBody}
+                dangerouslySetInnerHTML={{ __html: slide.content }}
+              />
+            )}
           </div>
         );
 
@@ -76,7 +85,12 @@ const SlidePreview = ({ slide, isActive = false, slideNumber, isIPadPreview = fa
                 <span>No video selected</span>
               </div>
             )}
-            {slide.content && <div className={styles.slideBody}>{slide.content}</div>}
+            {slide.content && (
+              <div 
+                className={styles.slideBody}
+                dangerouslySetInnerHTML={{ __html: slide.content }}
+              />
+            )}
           </div>
         );
 
@@ -104,7 +118,12 @@ const SlidePreview = ({ slide, isActive = false, slideNumber, isIPadPreview = fa
                 </div>
               )}
             </div>
-            {slide.content && <div className={styles.slideBody}>{slide.content}</div>}
+            {slide.content && (
+              <div 
+                className={styles.slideBody}
+                dangerouslySetInnerHTML={{ __html: slide.content }}
+              />
+            )}
           </div>
         );
 
@@ -112,7 +131,12 @@ const SlidePreview = ({ slide, isActive = false, slideNumber, isIPadPreview = fa
         return (
           <div className={`${styles.slideContent} ${styles.multiMediaSlide}`}>
             <h2 className={styles.slideTitle}>{slide.title || 'Multi-Media Slide'}</h2>
-            {slide.content && <div className={styles.slideBody}>{slide.content}</div>}
+            {slide.content && (
+              <div 
+                className={styles.slideBody}
+                dangerouslySetInnerHTML={{ __html: slide.content }}
+              />
+            )}
             <div className={styles.multiMediaContainer}>
               {slide.mediaItems && slide.mediaItems.map((item, index) => (
                 <div 
@@ -283,13 +307,19 @@ const SlidePreview = ({ slide, isActive = false, slideNumber, isIPadPreview = fa
                               justifyContent: 'center',
                               textAlign: 'center',
                               color: '#000',
-                              backgroundColor: 'transparent',
+                              backgroundColor: slot.backgroundColor || 'transparent',
+                              borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                              border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
+                              boxShadow: slot.boxShadow === 'small' ? '0 2px 4px rgba(0,0,0,0.1)' :
+                                        slot.boxShadow === 'medium' ? '0 4px 8px rgba(0,0,0,0.15)' :
+                                        slot.boxShadow === 'large' ? '0 8px 16px rgba(0,0,0,0.2)' : 'none',
                               zIndex: 2,
-                              position: 'relative'
+                              position: 'relative',
+                              overflow: 'hidden',
+                              fontFamily: slot.fontFamily || 'inherit'
                             }}
-                          >
-                            {slot.content}
-                          </div>
+                            dangerouslySetInnerHTML={{ __html: slot.content || '' }}
+                          />
                         ) : (
                           <div 
                             style={{ 
@@ -318,12 +348,14 @@ const SlidePreview = ({ slide, isActive = false, slideNumber, isIPadPreview = fa
           </div>
         );
 
-                                 default:
+      default:
         return (
           <div className={`${styles.slideContent} ${styles.contentSlide}`}>
             <h2 className={styles.slideTitle}>{slide.title || 'Content Slide'}</h2>
-            <div className={styles.slideBody}>{slide.content || 'Add your content here'}</div>
-            
+            <div 
+              className={styles.slideBody}
+              dangerouslySetInnerHTML={{ __html: slide.content || 'Add your content here' }}
+            />
           </div>
         );
     }

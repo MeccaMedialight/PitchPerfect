@@ -312,7 +312,7 @@
 .custom-layout-slide {
   background: white;
   color: #333;
-  padding: 1rem !important;
+  padding: 0 !important; /* Keep coordinates identical to 800x600 base */
   height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
@@ -325,13 +325,14 @@
   min-height: 200px;
   flex: 1;
   overflow: hidden; /* Prevent slots from going over the edge */
+  padding: 0; /* Ensure top-left is (0,0) */
 }
 
 .layout-slot {
   position: absolute;
-  border: 1px solid #ccc;
-  padding: 8px;
-  background-color: rgba(255, 255, 255, 0.9);
+  border: none;
+  padding: 0;
+  background-color: transparent;
   overflow: hidden;
   box-sizing: border-box;
 }

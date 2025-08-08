@@ -9,12 +9,12 @@
 .designer-header {
   background: white;
   border-bottom: 1px solid #e2e8f0;
-  padding: 4rem 3rem;
+  padding: 2rem 3rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  min-height: 180px;
+  min-height: 120px;
   flex-shrink: 0;
 }
 
@@ -27,7 +27,7 @@
 
 .header-controls {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   align-items: center;
   flex-wrap: wrap;
   min-width: 0;
@@ -73,6 +73,28 @@
   min-height: 32px;
 }
 
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #4a5568;
+}
+
+.toggle input {
+  accent-color: #667eea;
+}
+
 .preview-btn {
   background: #4299e1;
   color: white;
@@ -103,9 +125,9 @@
 .designer-content {
   flex: 1;
   display: grid;
-  grid-template-columns: 150px 1fr 150px;
-  gap: 4rem;
-  padding: 1rem;
+  grid-template-columns: 220px 1fr 240px;
+  gap: 1.5rem;
+  padding: 1.25rem;
 }
 
 .toolbar {
@@ -209,6 +231,11 @@
   position: relative;
   overflow: visible;
   margin: 1rem;
+}
+
+.slide-frame.show-grid {
+  background-size: 20px 20px, 100px 100px;
+  background-image: linear-gradient(#edf2f7 1px, transparent 1px), linear-gradient(90deg, #edf2f7 1px, transparent 1px);
 }
 
 .slot-item {
@@ -371,6 +398,28 @@
   height: fit-content;
 }
 
+.align-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.align-controls button {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.align-controls button:hover {
+  background: #f7fafc;
+  border-color: #667eea;
+}
+
 .properties-panel h3 {
   margin: 0 0 1rem 0;
   color: #2d3748;
@@ -468,7 +517,7 @@
 /* Responsive Design */
 @media (max-width: 1200px) {
   .designer-content {
-    grid-template-columns: 140px 1fr 140px;
+    grid-template-columns: 180px 1fr 200px;
   }
   
   .slide-frame {

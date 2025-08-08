@@ -10,6 +10,8 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
   const [localSlide, setLocalSlide] = useState(slide);
   const [customLayouts, setCustomLayouts] = useState([]);
   const [showLayoutPreview, setShowLayoutPreview] = useState(false);
+  const [highlightedSlotId, setHighlightedSlotId] = useState(null);
+  const [editingSlotId, setEditingSlotId] = useState(null);
 
   // Update local slide when prop changes
   React.useEffect(() => {
@@ -229,419 +231,450 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
 
       console.log('Custom layout slots:', localSlide.layoutSlots);
 
-    const updateSlotContent = (slotId, content) => {
-      const updatedSlots = localSlide.layoutSlots.map(slot =>
-        slot.id === slotId ? { ...slot, content } : slot
-      );
-      
-      const updatedSlide = {
-        ...localSlide,
-        layoutSlots: updatedSlots
-      };
-      
-      setLocalSlide(updatedSlide);
-      if (onImmediateUpdate) {
-        onImmediateUpdate(updatedSlide);
+    const slotStylePresets = {
+      'Card': {
+        backgroundColor: '#ffffff',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        boxShadow: 'medium'
+      },
+      'Hero Image': {
+        objectFit: 'cover',
+        padding: 0,
+        borderRadius: 8,
+        borderWidth: 0,
+        boxShadow: 'large',
+        backgroundColor: 'transparent'
+      },
+      'Framed': {
+        backgroundColor: '#ffffff',
+        padding: 8,
+        borderRadius: 0,
+        borderWidth: 2,
+        borderColor: '#2d3748',
+        boxShadow: 'small'
+      },
+      'Badge': {
+        backgroundColor: '#667eea',
+        padding: 8,
+        borderRadius: 999,
+        borderWidth: 0,
+        boxShadow: 'none'
+      },
+      'Captioned Media': {
+        backgroundColor: '#f8fafc',
+        padding: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        boxShadow: 'small'
       }
+    };
+
+    const updateSlots = (updater) => {
+      const updatedSlots = typeof updater === 'function' ? updater(localSlide.layoutSlots) : updater;
+      const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
+      setLocalSlide(updatedSlide);
+      if (onImmediateUpdate) onImmediateUpdate(updatedSlide);
       onUpdate(updatedSlide);
+    };
+    const applyPreset = (slotId, presetName) => {
+      const preset = slotStylePresets[presetName];
+      if (!preset) return;
+      updateSlots(localSlide.layoutSlots.map(slot => {
+        if (slot.id !== slotId) return slot;
+        const next = { ...slot };
+        Object.entries(preset).forEach(([key, val]) => {
+          if (key === 'objectFit' && slot.type !== 'image') return;
+          next[key] = val;
+        });
+        return next;
+      }));
+    };
+
+    const updateSlotContent = (slotId, content) => {
+      updateSlots(localSlide.layoutSlots.map(slot => slot.id === slotId ? { ...slot, content } : slot));
+    };
+
+    const updateSlotField = (slotId, field, value) => {
+      updateSlots(localSlide.layoutSlots.map(slot => slot.id === slotId ? { ...slot, [field]: value } : slot));
     };
 
     return (
       <div className="custom-layout-editor">
-        <div className="layout-preview">
-          <div className="layout-preview-header">
-            <h4>Layout Preview</h4>
-            <button 
-              className="preview-btn"
-              onClick={() => setShowLayoutPreview(true)}
-            >
-              <FaEye /> Full Preview
-            </button>
-          </div>
-          <div className="slide-frame-preview">
-                         {localSlide.layoutSlots.map((slot, index) => {
-               // Convert pixel values to percentages if needed
-               const containerWidth = 400; // Match this preview width
-               const containerHeight = 300; // Match this preview height
-              
-              let x = slot.position?.x || 0;
-              let y = slot.position?.y || 0;
-              let width = slot.size?.width || 30;
-              let height = slot.size?.height || 30;
-              
-              // If values are in pixels (large numbers), convert to percentages
-              if (width > 100) {
-                width = (width / containerWidth) * 100;
-              }
-              if (height > 100) {
-                height = (height / containerHeight) * 100;
-              }
-              if (x > 100) {
-                x = (x / containerWidth) * 100;
-              }
-              if (y > 100) {
-                y = (y / containerHeight) * 100;
-              }
-              
-              // Validate and clamp position/size values
-              x = Math.max(0, Math.min(100, x));
-              y = Math.max(0, Math.min(100, y));
-              width = Math.max(5, Math.min(100, width));
-              height = Math.max(5, Math.min(100, height));
-              
-              return (
-                <div
-                  key={slot.id}
-                  className="slot-preview"
-                  style={{
-                    position: 'absolute',
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    width: `${width}%`,
-                    height: `${height}%`,
-                    border: '2px dashed #ccc',
-                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.8rem',
-                    color: '#666',
-                    zIndex: 1
-                  }}
-                                 >
-                                       {slot.content ? (
-                      slot.type === 'image' ? (
-                        <img 
-                          src={slot.content} 
-                          alt="Slot content" 
-                          style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            objectFit: slot.objectFit || 'cover',
-                            borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
-                            border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
-                            boxShadow: slot.boxShadow === 'small' ? '0 2px 4px rgba(0,0,0,0.1)' :
-                                      slot.boxShadow === 'medium' ? '0 4px 8px rgba(0,0,0,0.15)' :
-                                      slot.boxShadow === 'large' ? '0 8px 16px rgba(0,0,0,0.2)' : 'none'
-                          }} 
-                        />
-                      ) : slot.type === 'video' ? (
-                        <video 
-                          controls 
-                          autoPlay={slot.autoplay || false}
-                          muted={slot.muted || false}
-                          style={{ width: '100%', height: '100%' }}
-                        >
-                          <source src={slot.content} type="video/mp4" />
-                        </video>
-                      ) : slot.type === 'text' ? (
-                        <div 
-                          style={{ 
-                            fontSize: '0.7rem', 
-                            lineHeight: '1.1', 
-                            padding: '2px', 
-                            overflow: 'hidden',
-                            textAlign: 'left'
-                          }}
-                          dangerouslySetInnerHTML={{ __html: slot.content }}
-                        />
-                      ) : (
-                        slot.type
-                      )
-                    ) : (
-                      slot.type
-                    )}
-                 </div>
-              );
-            })}
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+          <button 
+            className="preview-btn"
+            onClick={() => setShowLayoutPreview(true)}
+          >
+            <FaEye /> Full Preview
+          </button>
         </div>
 
-        <div className="slot-editors">
-          <h4>Edit Slot Content</h4>
-          {localSlide.layoutSlots.map((slot, index) => (
-            <div key={slot.id} className="slot-editor">
-              <div className="slot-editor-header">
-                <label>{slot.type} Slot {index + 1}</label>
-                {slot.content && (
-                  <button 
-                    className="clear-content-btn"
-                    onClick={() => updateSlotContent(slot.id, '')}
-                    title="Clear content"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              
-                             {slot.type === 'text' ? (
-                 <RichTextEditor
-                   value={slot.content || ''}
-                   onChange={(content) => updateSlotContent(slot.id, content)}
-                   placeholder={`Enter ${slot.type} content...`}
-                   className="slot-rich-text-editor"
-                 />
-                             ) : (slot.type === 'image' || slot.type === 'video') ? (
-                 <div className="media-input-group">
-                   <div className="input-tabs">
-                     <button 
-                       className={`tab-btn ${!slot.content?.startsWith('http') ? 'active' : ''}`}
-                       onClick={() => {
-                         const fileInput = document.getElementById(`file-input-${slot.id}`);
-                         if (fileInput) fileInput.click();
-                       }}
-                     >
-                       Upload File
-                     </button>
-                     <button 
-                       className={`tab-btn ${slot.content?.startsWith('http') ? 'active' : ''}`}
-                       onClick={() => {
-                         const urlInput = document.getElementById(`url-input-${slot.id}`);
-                         if (urlInput) urlInput.focus();
-                       }}
-                     >
-                       URL
-                     </button>
-                   </div>
-                   
-                   <input
-                     id={`file-input-${slot.id}`}
-                     type="file"
-                     accept={slot.type === 'image' ? 'image/*' : 'video/*'}
-                     onChange={(e) => {
-                       const file = e.target.files[0];
-                       if (file) {
-                         const formData = new FormData();
-                         formData.append('file', file);
-                         
-                         fetch(config.getApiUrl(config.UPLOAD_ENDPOINT), {
-                           method: 'POST',
-                           body: formData
-                         })
-                         .then(response => response.json())
-                         .then(data => {
-                           if (data.success) {
-                             updateSlotContent(slot.id, config.getServerUrl(data.file.url));
-                           } else {
-                             alert('Upload failed: ' + (data.error || 'Unknown error'));
-                           }
-                         })
-                         .catch(error => {
-                           console.error('Upload error:', error);
-                           alert('Upload failed: ' + error.message);
-                         });
-                       }
-                     }}
-                     style={{ display: 'none' }}
-                   />
-                   
-                   <input
-                     id={`url-input-${slot.id}`}
-                     type="text"
-                     value={slot.content || ''}
-                     onChange={(e) => updateSlotContent(slot.id, e.target.value)}
-                     placeholder={`Enter ${slot.type} URL...`}
-                     className="form-input"
-                   />
-                   
-                   {slot.type === 'video' && slot.content && (
-                     <div className="video-options">
-                       <div className="option-group">
-                         <label className="checkbox-label">
-                           <input
-                             type="checkbox"
-                             checked={slot.autoplay || false}
-                             onChange={(e) => {
-                               const updatedSlots = localSlide.layoutSlots.map(s =>
-                                 s.id === slot.id ? { ...s, autoplay: e.target.checked } : s
-                               );
-                               const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
-                               setLocalSlide(updatedSlide);
-                               if (onImmediateUpdate) {
-                                 onImmediateUpdate(updatedSlide);
-                               }
-                               onUpdate(updatedSlide);
-                             }}
-                           />
-                           <span>Autoplay</span>
-                         </label>
-                         <label className="checkbox-label">
-                           <input
-                             type="checkbox"
-                             checked={slot.muted || false}
-                             onChange={(e) => {
-                               const updatedSlots = localSlide.layoutSlots.map(s =>
-                                 s.id === slot.id ? { ...s, muted: e.target.checked } : s
-                               );
-                               const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
-                               setLocalSlide(updatedSlide);
-                               if (onImmediateUpdate) {
-                                 onImmediateUpdate(updatedSlide);
-                               }
-                               onUpdate(updatedSlide);
-                             }}
-                           />
-                           <span>Muted</span>
-                         </label>
-                       </div>
-                     </div>
-                   )}
-                   
-                   {slot.type === 'image' && slot.content && (
-                     <div className="image-options">
-                       <h5>Image Styling</h5>
-                       <div className="option-group">
-                         <label>Border Radius:</label>
-                         <input
-                           type="range"
-                           min="0"
-                           max="50"
-                           value={slot.borderRadius || 0}
-                           onChange={(e) => {
-                             const updatedSlots = localSlide.layoutSlots.map(s =>
-                               s.id === slot.id ? { ...s, borderRadius: parseInt(e.target.value) } : s
-                             );
-                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
-                             setLocalSlide(updatedSlide);
-                             if (onImmediateUpdate) {
-                               onImmediateUpdate(updatedSlide);
-                             }
-                             onUpdate(updatedSlide);
-                           }}
-                         />
-                         <span>{slot.borderRadius || 0}px</span>
-                       </div>
-                       
-                       <div className="option-group">
-                         <label>Object Fit:</label>
-                         <select
-                           value={slot.objectFit || 'cover'}
-                           onChange={(e) => {
-                             const updatedSlots = localSlide.layoutSlots.map(s =>
-                               s.id === slot.id ? { ...s, objectFit: e.target.value } : s
-                             );
-                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
-                             setLocalSlide(updatedSlide);
-                             if (onImmediateUpdate) {
-                               onImmediateUpdate(updatedSlide);
-                             }
-                             onUpdate(updatedSlide);
-                           }}
-                         >
-                           <option value="cover">Cover</option>
-                           <option value="contain">Contain</option>
-                           <option value="fill">Fill</option>
-                           <option value="scale-down">Scale Down</option>
-                         </select>
-                       </div>
-                       
-                       <div className="option-group">
-                         <label>Border Width:</label>
-                         <input
-                           type="range"
-                           min="0"
-                           max="20"
-                           value={slot.borderWidth || 0}
-                           onChange={(e) => {
-                             const updatedSlots = localSlide.layoutSlots.map(s =>
-                               s.id === slot.id ? { ...s, borderWidth: parseInt(e.target.value) } : s
-                             );
-                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
-                             setLocalSlide(updatedSlide);
-                             if (onImmediateUpdate) {
-                               onImmediateUpdate(updatedSlide);
-                             }
-                             onUpdate(updatedSlide);
-                           }}
-                         />
-                         <span>{slot.borderWidth || 0}px</span>
-                       </div>
-                       
-                       <div className="option-group">
-                         <label>Border Color:</label>
-                         <input
-                           type="color"
-                           value={slot.borderColor || '#000000'}
-                           onChange={(e) => {
-                             const updatedSlots = localSlide.layoutSlots.map(s =>
-                               s.id === slot.id ? { ...s, borderColor: e.target.value } : s
-                             );
-                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
-                             setLocalSlide(updatedSlide);
-                             if (onImmediateUpdate) {
-                               onImmediateUpdate(updatedSlide);
-                             }
-                             onUpdate(updatedSlide);
-                           }}
-                         />
-                       </div>
-                       
-                       <div className="option-group">
-                         <label>Box Shadow:</label>
-                         <select
-                           value={slot.boxShadow || 'none'}
-                           onChange={(e) => {
-                             const updatedSlots = localSlide.layoutSlots.map(s =>
-                               s.id === slot.id ? { ...s, boxShadow: e.target.value } : s
-                             );
-                             const updatedSlide = { ...localSlide, layoutSlots: updatedSlots };
-                             setLocalSlide(updatedSlide);
-                             if (onImmediateUpdate) {
-                               onImmediateUpdate(updatedSlide);
-                             }
-                             onUpdate(updatedSlide);
-                           }}
-                         >
-                           <option value="none">None</option>
-                           <option value="small">Small</option>
-                           <option value="medium">Medium</option>
-                           <option value="large">Large</option>
-                         </select>
-                       </div>
-                     </div>
-                   )}
-                   
-                   {slot.content && (
-                     <div className="media-preview">
-                       {slot.type === 'image' ? (
-                         <img 
-                           src={slot.content} 
-                           alt="Preview" 
-                           style={{ 
-                             maxWidth: '100%', 
-                             maxHeight: '100px', 
-                             objectFit: slot.objectFit || 'cover',
-                             borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
-                             border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
-                             boxShadow: slot.boxShadow === 'small' ? '0 2px 4px rgba(0,0,0,0.1)' :
-                                       slot.boxShadow === 'medium' ? '0 4px 8px rgba(0,0,0,0.15)' :
-                                       slot.boxShadow === 'large' ? '0 8px 16px rgba(0,0,0,0.2)' : 'none'
-                           }} 
-                         />
-                       ) : (
-                         <video 
-                           controls 
-                           autoPlay={slot.autoplay || false}
-                           muted={slot.muted || false}
-                           style={{ maxWidth: '100%', maxHeight: '100px' }}
-                         >
-                           <source src={slot.content} type="video/mp4" />
-                         </video>
-                       )}
-                     </div>
-                   )}
-                 </div>
-              ) : (
-                <input
-                  type="text"
-                  value={slot.content || ''}
-                  onChange={(e) => updateSlotContent(slot.id, e.target.value)}
-                  placeholder={`Enter ${slot.type} URL or path...`}
-                  className="form-input"
-                />
-              )}
+        <div className="layout-edit-grid">
+          <div className="layout-live-preview">
+            <div className="layout-preview-header" style={{ justifyContent: 'space-between' }}>
+              <h4>Live Preview</h4>
+              <button className="preview-btn" onClick={() => setShowLayoutPreview(true)}><FaEye /> Full Preview</button>
             </div>
-          ))}
+            <div className="slide-frame-preview">
+              {localSlide.layoutSlots.map((slot, index) => {
+                const baseWidth = 800;
+                const baseHeight = 600;
+                const pxX = slot.position?.x ?? 0;
+                const pxY = slot.position?.y ?? 0;
+                const pxW = slot.size?.width ?? 30;
+                const pxH = slot.size?.height ?? 30;
+                const xPct = Math.max(0, Math.min(100, (pxX / baseWidth) * 100));
+                const yPct = Math.max(0, Math.min(100, (pxY / baseHeight) * 100));
+                const wPct = Math.max(0, Math.min(100, (pxW / baseWidth) * 100));
+                const hPct = Math.max(0, Math.min(100, (pxH / baseHeight) * 100));
+                const isHighlighted = highlightedSlotId === slot.id;
+                const isEditing = editingSlotId === slot.id;
+                return (
+                  <div
+                    key={slot.id}
+                    className="slot-preview"
+                    style={{
+                      position: 'absolute',
+                      left: `${xPct}%`,
+                      top: `${yPct}%`,
+                      width: `${wPct}%`,
+                      height: `${hPct}%`,
+                      zIndex: index + 1,
+                      background: slot.backgroundColor || 'transparent',
+                      padding: `${slot.padding || 0}px`,
+                      borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                      border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
+                      boxSizing: 'border-box',
+                      outline: isHighlighted || isEditing ? '2px solid #667eea' : 'none',
+                      outlineOffset: '0',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => setEditingSlotId(slot.id)}
+                    onMouseEnter={() => setHighlightedSlotId(slot.id)}
+                    onMouseLeave={() => setHighlightedSlotId(null)}
+                  >
+                    {slot.type === 'image' && slot.content && (
+                      <img
+                        src={slot.content}
+                        alt=""
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: slot.objectFit || 'cover',
+                          borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0'
+                        }}
+                      />
+                    )}
+                    {slot.type === 'video' && slot.content && (
+                      <video
+                        controls
+                        autoPlay={!!slot.autoplay}
+                        muted={!!slot.muted}
+                        style={{ width: '100%', height: '100%' }}
+                      >
+                        <source src={slot.content} type="video/mp4" />
+                      </video>
+                    )}
+                    {slot.type === 'text' && (
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          overflow: 'hidden',
+                          textAlign: 'left'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: slot.content || '' }}
+                      />
+                    )}
+                    {!slot.content && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '0.8rem', color: '#999'
+                      }}>
+                        {slot.type} slot
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="slot-editors">
+            {editingSlotId ? (
+              (() => {
+                const slot = localSlide.layoutSlots.find(s => s.id === editingSlotId);
+                const index = localSlide.layoutSlots.findIndex(s => s.id === editingSlotId);
+                if (!slot) return null;
+                
+                return (
+                  <div className="slot-editor">
+                    <div className="slot-editor-header">
+                      <label>{slot.type} Slot {index + 1}</label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {slot.content && (
+                          <button 
+                            className="clear-content-btn"
+                            onClick={() => updateSlotContent(slot.id, '')}
+                            title="Clear content"
+                          >
+                            Clear
+                          </button>
+                        )}
+                        <button 
+                          className="close-btn"
+                          onClick={() => setEditingSlotId(null)}
+                          title="Close editor"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="option-group" style={{ marginBottom: '0.5rem' }}>
+                      <label>Preset:</label>
+                      <select
+                        onChange={(e) => {
+                          const name = e.target.value;
+                          if (name) applyPreset(slot.id, name);
+                          e.target.value = '';
+                        }}
+                        defaultValue=""
+                        style={{ padding: '0.25rem 0.5rem' }}
+                      >
+                        <option value="">Choose preset…</option>
+                        {Object.keys(slotStylePresets).map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {slot.type === 'text' ? (
+                      <RichTextEditor
+                        value={slot.content || ''}
+                        onChange={(content) => updateSlotContent(slot.id, content)}
+                        placeholder={`Enter ${slot.type} content...`}
+                        className="slot-rich-text-editor"
+                      />
+                    ) : (slot.type === 'image' || slot.type === 'video') ? (
+                      <div className="media-input-group">
+                        <div className="input-tabs">
+                          <button 
+                            className={`tab-btn ${!slot.content?.startsWith('http') ? 'active' : ''}`}
+                            onClick={() => {
+                              const fileInput = document.getElementById(`file-input-${slot.id}`);
+                              if (fileInput) fileInput.click();
+                            }}
+                          >
+                            Upload File
+                          </button>
+                          <button 
+                            className={`tab-btn ${slot.content?.startsWith('http') ? 'active' : ''}`}
+                            onClick={() => {
+                              const urlInput = document.getElementById(`url-input-${slot.id}`);
+                              if (urlInput) urlInput.focus();
+                            }}
+                          >
+                            URL
+                          </button>
+                        </div>
+                        
+                        <input
+                          id={`file-input-${slot.id}`}
+                          type="file"
+                          accept={slot.type === 'image' ? 'image/*' : 'video/*'}
+                          onChange={(e) => {
+                            e.preventDefault();
+                            const file = e.target.files[0];
+                            if (file) {
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              
+                              fetch(config.getApiUrl(config.UPLOAD_ENDPOINT), {
+                                method: 'POST',
+                                body: formData
+                              })
+                              .then(response => response.json())
+                              .then(data => {
+                                if (data.success) {
+                                  updateSlotContent(slot.id, config.getServerUrl(data.file.url));
+                                } else {
+                                  alert('Upload failed: ' + (data.error || 'Unknown error'));
+                                }
+                              })
+                              .catch(error => {
+                                console.error('Upload error:', error);
+                                alert('Upload failed: ' + error.message);
+                              });
+                            }
+                            // Reset the input value to allow re-uploading the same file
+                            e.target.value = '';
+                          }}
+                          style={{ display: 'none' }}
+                        />
+                        
+                        <input
+                          id={`url-input-${slot.id}`}
+                          type="text"
+                          value={slot.content || ''}
+                          onChange={(e) => updateSlotContent(slot.id, e.target.value)}
+                          placeholder={`Enter ${slot.type} URL...`}
+                          className="form-input"
+                        />
+                        
+                        {slot.type === 'video' && slot.content && (
+                          <div className="video-options">
+                            <div className="option-group">
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={slot.autoplay || false}
+                                  onChange={(e) => updateSlotField(slot.id, 'autoplay', e.target.checked)}
+                                />
+                                <span>Autoplay</span>
+                              </label>
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={slot.muted || false}
+                                  onChange={(e) => updateSlotField(slot.id, 'muted', e.target.checked)}
+                                />
+                                <span>Muted</span>
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {slot.type === 'image' && (
+                          <div className="image-options">
+                            <h5>Image Options</h5>
+                            <div className="option-group">
+                              <label>Object Fit:</label>
+                              <select
+                                value={slot.objectFit || 'cover'}
+                                onChange={(e) => updateSlotField(slot.id, 'objectFit', e.target.value)}
+                              >
+                                <option value="cover">Cover</option>
+                                <option value="contain">Contain</option>
+                                <option value="fill">Fill</option>
+                                <option value="scale-down">Scale Down</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {slot.content && (
+                          <div className="media-preview">
+                            {slot.type === 'image' ? (
+                              <img 
+                                src={slot.content} 
+                                alt="Preview" 
+                                style={{ 
+                                  maxWidth: '100%', 
+                                  maxHeight: '100px', 
+                                  objectFit: slot.objectFit || 'cover'
+                                }} 
+                              />
+                            ) : (
+                              <video 
+                                controls 
+                                autoPlay={slot.autoplay || false}
+                                muted={slot.muted || false}
+                                style={{ maxWidth: '100%', maxHeight: '100px' }}
+                              >
+                                <source src={slot.content} type="video/mp4" />
+                              </video>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={slot.content || ''}
+                        onChange={(e) => updateSlotContent(slot.id, e.target.value)}
+                        placeholder={`Enter ${slot.type} URL or path...`}
+                        className="form-input"
+                      />
+                    )}
+
+                    {/* Styling Options (applies to all slot types) */}
+                    <div className="image-options" style={{ marginTop: '0.5rem' }}>
+                      <h5>Styling</h5>
+                      <div className="option-group">
+                        <label>Border Width:</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="20"
+                          value={slot.borderWidth || 0}
+                          onChange={(e) => updateSlotField(slot.id, 'borderWidth', parseInt(e.target.value))}
+                        />
+                        <span>{slot.borderWidth || 0}px</span>
+                      </div>
+                      <div className="option-group">
+                        <label>Border Color:</label>
+                        <input
+                          type="color"
+                          value={slot.borderColor || '#000000'}
+                          onChange={(e) => updateSlotField(slot.id, 'borderColor', e.target.value)}
+                        />
+                      </div>
+                      <div className="option-group">
+                        <label>Border Radius:</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="50"
+                          value={slot.borderRadius || 0}
+                          onChange={(e) => updateSlotField(slot.id, 'borderRadius', parseInt(e.target.value))}
+                        />
+                        <span>{slot.borderRadius || 0}px</span>
+                      </div>
+                      <div className="option-group">
+                        <label>Box Shadow:</label>
+                        <select
+                          value={slot.boxShadow || 'none'}
+                          onChange={(e) => updateSlotField(slot.id, 'boxShadow', e.target.value)}
+                        >
+                          <option value="none">None</option>
+                          <option value="small">Small</option>
+                          <option value="medium">Medium</option>
+                          <option value="large">Large</option>
+                        </select>
+                      </div>
+                      <div className="option-group">
+                        <label>Background:</label>
+                        <input
+                          type="color"
+                          value={slot.backgroundColor || '#ffffff'}
+                          onChange={(e) => updateSlotField(slot.id, 'backgroundColor', e.target.value)}
+                        />
+                      </div>
+                      <div className="option-group">
+                        <label>Padding:</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="40"
+                          value={slot.padding || 0}
+                          onChange={(e) => updateSlotField(slot.id, 'padding', parseInt(e.target.value))}
+                        />
+                        <span>{slot.padding || 0}px</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="no-slot-selected">
+                <p>Click on a slot in the preview to edit its content and styling.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -920,6 +953,12 @@ const SlideEditor = ({ slide, onUpdate, onAddMedia, onImmediateUpdate }) => {
               </option>
             ))}
           </select>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+            <a href="/layout-designer" className="btn btn-primary" style={{ padding: '0.4rem 0.6rem' }}>Open Layout Designer</a>
+            {localSlide.layoutId && (
+              <a href={`/layout-designer?edit=${localSlide.layoutId}`} className="btn btn-secondary" style={{ padding: '0.4rem 0.6rem' }}>Edit This Layout</a>
+            )}
+          </div>
         </div>
       )}
 

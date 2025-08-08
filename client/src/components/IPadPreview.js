@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaTimes, FaChevronLeft, FaChevronRight, FaPlay, FaPause } from 'react-icons/fa';
 import SlidePreview from './SlidePreview';
+import fontManager from '../utils/fontManager';
 
 const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onSlideChange }) => {
   const [currentSlide, setCurrentSlide] = React.useState(currentSlideIndex);
@@ -10,6 +11,25 @@ const IPadPreview = ({ presentation, isOpen, onClose, currentSlideIndex = 0, onS
   React.useEffect(() => {
     setCurrentSlide(currentSlideIndex);
   }, [currentSlideIndex]);
+
+  // Load custom fonts when preview is opened
+  React.useEffect(() => {
+    if (isOpen) {
+      // Ensure custom fonts are loaded
+      const customFonts = fontManager.customFonts;
+      customFonts.forEach(font => {
+        if (font.base64 && !document.fonts.check(`12px "${font.value}"`)) {
+          const fontFace = new FontFace(font.value, `url(${font.base64})`);
+          fontFace.load().then(() => {
+            document.fonts.add(fontFace);
+            console.log(`Custom font loaded: ${font.value}`);
+          }).catch(error => {
+            console.error('Error loading custom font:', error);
+          });
+        }
+      });
+    }
+  }, [isOpen]);
 
   React.useEffect(() => {
     if (isPlaying) {

@@ -148,6 +148,9 @@ const SlideLayoutDesigner = () => {
   const [resizeHandle, setResizeHandle] = useState(null);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const slideRef = useRef(null);
+  const [showGrid, setShowGrid] = useState(true);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [gridSize, setGridSize] = useState(20);
 
   // Check if we're editing an existing layout
   useEffect(() => {
@@ -317,8 +320,17 @@ const SlideLayoutDesigner = () => {
     // Constrain to slide frame boundaries
     const maxX = frameRect.width - 200; // slot width
     const maxY = frameRect.height - 150; // slot height
-    const constrainedX = Math.max(0, Math.min(newX, maxX));
-    const constrainedY = Math.max(0, Math.min(newY, maxY));
+    let constrainedX = Math.max(0, Math.min(newX, maxX));
+    let constrainedY = Math.max(0, Math.min(newY, maxY));
+
+    if (snapToGrid && gridSize > 0) {
+      const snap = (v) => Math.round(v / gridSize) * gridSize;
+      constrainedX = snap(constrainedX);
+      constrainedY = snap(constrainedY);
+      // Keep within bounds after snapping
+      constrainedX = Math.max(0, Math.min(constrainedX, maxX));
+      constrainedY = Math.max(0, Math.min(constrainedY, maxY));
+    }
 
     setSlots(prevSlots => 
       prevSlots.map(slot => 
@@ -371,8 +383,16 @@ const SlideLayoutDesigner = () => {
       // Constrain to slide frame boundaries
       const maxX = frameRect.width - 200;
       const maxY = frameRect.height - 150;
-      const constrainedX = Math.max(0, Math.min(newX, maxX));
-      const constrainedY = Math.max(0, Math.min(newY, maxY));
+      let constrainedX = Math.max(0, Math.min(newX, maxX));
+      let constrainedY = Math.max(0, Math.min(newY, maxY));
+
+      if (snapToGrid && gridSize > 0) {
+        const snap = (v) => Math.round(v / gridSize) * gridSize;
+        constrainedX = snap(constrainedX);
+        constrainedY = snap(constrainedY);
+        constrainedX = Math.max(0, Math.min(constrainedX, maxX));
+        constrainedY = Math.max(0, Math.min(constrainedY, maxY));
+      }
 
       setSlots(prevSlots => 
         prevSlots.map(slot => 
@@ -422,8 +442,17 @@ const SlideLayoutDesigner = () => {
       // Constrain to slide boundaries
       const maxX = slideRect.width - newWidth;
       const maxY = slideRect.height - newHeight;
-      newX = Math.max(0, Math.min(newX, maxX));
-      newY = Math.max(0, Math.min(newY, maxY));
+
+      if (snapToGrid && gridSize > 0) {
+        const snap = (v) => Math.round(v / gridSize) * gridSize;
+        newWidth = Math.max(150, snap(newWidth));
+        newHeight = Math.max(100, snap(newHeight));
+        newX = snap(newX);
+        newY = snap(newY);
+      }
+
+      newX = Math.max(0, Math.min(newX, slideRect.width - newWidth));
+      newY = Math.max(0, Math.min(newY, slideRect.height - newHeight));
 
       setSlots(prevSlots => 
         prevSlots.map(s => 
@@ -469,6 +498,82 @@ const SlideLayoutDesigner = () => {
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
   }, [draggingSlot, dragOffset, resizingSlot, resizeHandle, resizeStart]);
+
+  // Keyboard nudging for selected slot
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!selectedSlot) return;
+      const slideFrame = slideRef.current?.querySelector('.slide-frame');
+      if (!slideFrame) return;
+
+      const frameRect = slideFrame.getBoundingClientRect();
+      const slot = slots.find(s => s.id === selectedSlot);
+      if (!slot) return;
+
+      const baseStep = snapToGrid && gridSize > 0 ? gridSize : 2;
+      const step = e.shiftKey ? baseStep * 2 : baseStep;
+      let dx = 0, dy = 0;
+      if (e.key === 'ArrowLeft') dx = -step;
+      else if (e.key === 'ArrowRight') dx = step;
+      else if (e.key === 'ArrowUp') dy = -step;
+      else if (e.key === 'ArrowDown') dy = step;
+      else return;
+
+      e.preventDefault();
+      const newX = Math.max(0, Math.min(slot.position.x + dx, frameRect.width - slot.size.width));
+      const newY = Math.max(0, Math.min(slot.position.y + dy, frameRect.height - slot.size.height));
+      setSlots(prev => prev.map(s => s.id === selectedSlot ? { ...s, position: { x: newX, y: newY } } : s));
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedSlot, slots, gridSize, snapToGrid]);
+
+  const duplicateSelectedSlot = () => {
+    if (!selectedSlot) return;
+    const slideFrame = slideRef.current?.querySelector('.slide-frame');
+    if (!slideFrame) return;
+    const frameRect = slideFrame.getBoundingClientRect();
+    const original = slots.find(s => s.id === selectedSlot);
+    if (!original) return;
+    const offset = 20;
+    let newX = Math.min(original.position.x + offset, frameRect.width - original.size.width);
+    let newY = Math.min(original.position.y + offset, frameRect.height - original.size.height);
+    if (snapToGrid && gridSize > 0) {
+      const snap = (v) => Math.round(v / gridSize) * gridSize;
+      newX = snap(newX);
+      newY = snap(newY);
+    }
+    const duplicated = {
+      ...original,
+      id: `slot-${Date.now()}`,
+      position: { x: newX, y: newY }
+    };
+    setSlots(prev => [...prev, duplicated]);
+    setSelectedSlot(duplicated.id);
+  };
+
+  const alignSelected = (direction) => {
+    if (!selectedSlot) return;
+    const slideFrame = slideRef.current?.querySelector('.slide-frame');
+    if (!slideFrame) return;
+    const frameRect = slideFrame.getBoundingClientRect();
+    const slot = slots.find(s => s.id === selectedSlot);
+    if (!slot) return;
+    let x = slot.position.x;
+    let y = slot.position.y;
+    if (direction === 'left') x = 0;
+    if (direction === 'centerX') x = (frameRect.width - slot.size.width) / 2;
+    if (direction === 'right') x = frameRect.width - slot.size.width;
+    if (direction === 'top') y = 0;
+    if (direction === 'centerY') y = (frameRect.height - slot.size.height) / 2;
+    if (direction === 'bottom') y = frameRect.height - slot.size.height;
+    if (snapToGrid && gridSize > 0) {
+      const snap = (v) => Math.round(v / gridSize) * gridSize;
+      x = snap(x);
+      y = snap(y);
+    }
+    setSlots(prev => prev.map(s => s.id === selectedSlot ? { ...s, position: { x, y } } : s));
+  };
 
   const saveLayout = () => {
     if (!layoutName.trim()) {
@@ -538,6 +643,24 @@ const SlideLayoutDesigner = () => {
             onChange={(e) => setLayoutName(e.target.value)}
             className="layout-name-input"
           />
+          <div className="toggle-group" title="Grid and snapping options">
+            <label className="toggle">
+              <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+              Grid
+            </label>
+            <label className="toggle">
+              <input type="checkbox" checked={snapToGrid} onChange={(e) => setSnapToGrid(e.target.checked)} />
+              Snap
+            </label>
+            <label className="toggle">
+              Size
+              <select value={gridSize} onChange={(e) => setGridSize(parseInt(e.target.value) || 20)} style={{ border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 6px' }}>
+                <option value={10}>10px</option>
+                <option value={20}>20px</option>
+                <option value={40}>40px</option>
+              </select>
+            </label>
+          </div>
           <button
             className="preview-btn"
             onClick={() => setIsPreviewMode(!isPreviewMode)}
@@ -620,7 +743,7 @@ const SlideLayoutDesigner = () => {
         >
           <div className="slide-preview-container">
             <div 
-              className="slide-frame"
+              className={`slide-frame ${showGrid ? 'show-grid' : ''}`}
               onClick={() => setSelectedSlot(null)}
             >
               {slots.length === 0 && (
@@ -675,6 +798,14 @@ const SlideLayoutDesigner = () => {
                 
                 return (
                   <>
+                    <div className="align-controls">
+                      <button onClick={() => alignSelected('left')}>Left</button>
+                      <button onClick={() => alignSelected('centerX')}>Center</button>
+                      <button onClick={() => alignSelected('right')}>Right</button>
+                      <button onClick={() => alignSelected('top')}>Top</button>
+                      <button onClick={() => alignSelected('centerY')}>Middle</button>
+                      <button onClick={() => alignSelected('bottom')}>Bottom</button>
+                    </div>
                     <div className="property-group">
                       <label>Type:</label>
                       <span className="property-value">{slot.type}</span>
@@ -725,6 +856,12 @@ const SlideLayoutDesigner = () => {
                         />
                       </div>
                     </div>
+                    <button
+                      className="delete-slot-btn"
+                      onClick={duplicateSelectedSlot}
+                    >
+                      <FaCopy /> Duplicate Slot
+                    </button>
                     <button
                       className="delete-slot-btn"
                       onClick={() => deleteSlot(selectedSlot)}

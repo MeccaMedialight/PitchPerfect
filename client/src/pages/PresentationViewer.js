@@ -303,88 +303,109 @@ const SlideDisplay = ({ slide }) => {
           </div>
         );
 
-      case 'custom-layout':
+      case 'custom-layout': {
+        const baseWidth = 800; // Designer canvas width
+        const baseHeight = 600; // Designer canvas height
         return (
           <div className="slide-content custom-layout-slide">
             <div className="custom-layout-container">
-              {slide.layoutSlots && slide.layoutSlots.map((slot, index) => {
-                  // Convert pixel values to percentages if needed
-                  // Use the original layout designer dimensions for accurate positioning
-                  const containerWidth = 800; // Layout designer width
-                  const containerHeight = 600; // Layout designer height
-                  
-                  let x = slot.position?.x || 0;
-                  let y = slot.position?.y || 0;
-                  let width = slot.size?.width || 30;
-                  let height = slot.size?.height || 30;
-                  
-                  // If values are in pixels (large numbers), convert to percentages
-                  if (width > 100) {
-                    width = (width / containerWidth) * 100;
-                  }
-                  if (height > 100) {
-                    height = (height / containerHeight) * 100;
-                  }
-                  if (x > 100) {
-                    x = (x / containerWidth) * 100;
-                  }
-                  if (y > 100) {
-                    y = (y / containerHeight) * 100;
-                  }
-                  
-                  return (
+              {Array.isArray(slide.layoutSlots) && slide.layoutSlots.map((slot, index) => {
+                const pxX = slot.position?.x ?? 0;
+                const pxY = slot.position?.y ?? 0;
+                const pxW = slot.size?.width ?? 30;
+                const pxH = slot.size?.height ?? 30;
+
+                // Treat designer values as pixels and convert to percentages relative to 800x600
+                const xPct = Math.max(0, Math.min(100, (pxX / baseWidth) * 100));
+                const yPct = Math.max(0, Math.min(100, (pxY / baseHeight) * 100));
+                const wPct = Math.max(0, Math.min(100, (pxW / baseWidth) * 100));
+                const hPct = Math.max(0, Math.min(100, (pxH / baseHeight) * 100));
+
+                return (
                   <div
-                    key={slot.id}
+                    key={slot.id || index}
                     className="layout-slot"
                     style={{
-                      position: 'absolute',
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      width: `${width}%`,
-                      height: `${height}%`,
+                      left: `${xPct}%`,
+                      top: `${yPct}%`,
+                      width: `${wPct}%`,
+                      height: `${hPct}%`,
                       zIndex: index + 1,
-                      border: '1px solid #ccc',
-                      padding: '8px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      overflow: 'hidden'
+                      background: slot.backgroundColor || 'transparent',
+                      padding: `${slot.padding || 0}px`,
+                      borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                      border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
                     }}
                   >
                     {slot.type === 'image' && slot.content && (
-                      <img 
-                        src={slot.content} 
-                        alt="Slot content" 
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
+                      <img
+                        src={slot.content}
+                        alt="Slot content"
+                        style={{
+                          width: '100%',
+                          height: '100%',
                           objectFit: slot.objectFit || 'cover',
                           borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
                           border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
-                          boxShadow: slot.boxShadow === 'small' ? '0 2px 4px rgba(0,0,0,0.1)' :
-                                    slot.boxShadow === 'medium' ? '0 4px 8px rgba(0,0,0,0.15)' :
-                                    slot.boxShadow === 'large' ? '0 8px 16px rgba(0,0,0,0.2)' : 'none'
-                        }} 
+                          boxShadow:
+                            slot.boxShadow === 'small'
+                              ? '0 2px 4px rgba(0,0,0,0.1)'
+                              : slot.boxShadow === 'medium'
+                              ? '0 4px 8px rgba(0,0,0,0.15)'
+                              : slot.boxShadow === 'large'
+                              ? '0 8px 16px rgba(0,0,0,0.2)'
+                              : 'none'
+                        }}
                       />
                     )}
                     {slot.type === 'video' && slot.content && (
-                      <video controls style={{ width: '100%', height: '100%' }}>
+                      <video
+                        controls
+                        autoPlay={!!slot.autoplay}
+                        muted={!!slot.muted}
+                        style={{ width: '100%', height: '100%' }}
+                      >
                         <source src={slot.content} type="video/mp4" />
                         Your browser does not support the video tag.
                       </video>
                     )}
-                    {slot.type === 'text' && slot.content && (
-                      <div className="slot-text" style={{ fontSize: '0.9rem', lineHeight: '1.2' }}>
-                        {slot.content}
-                      </div>
+                    {slot.type === 'text' && (
+                      <div
+                        className="slot-text"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          overflow: 'hidden',
+                          textAlign: 'left',
+                          padding: `${slot.padding || 0}px`,
+                          background: slot.backgroundColor || 'transparent',
+                          borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                          border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none',
+                          boxShadow:
+                            slot.boxShadow === 'small'
+                              ? '0 2px 4px rgba(0,0,0,0.1)'
+                              : slot.boxShadow === 'medium'
+                              ? '0 4px 8px rgba(0,0,0,0.15)'
+                              : slot.boxShadow === 'large'
+                              ? '0 8px 16px rgba(0,0,0,0.2)'
+                              : 'none'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: slot.content || '' }}
+                      />
                     )}
-                    {(!slot.content || (slot.type !== 'text' && !slot.content)) && (
-                      <div className="slot-placeholder" style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        height: '100%',
-                        fontSize: '0.8rem',
-                        color: '#999'
-                      }}>
+                    {!slot.content && (
+                      <div
+                        className="slot-placeholder"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '100%',
+                          height: '100%',
+                          fontSize: '0.8rem',
+                          color: '#999'
+                        }}
+                      >
                         {slot.type} slot
                       </div>
                     )}
@@ -394,6 +415,7 @@ const SlideDisplay = ({ slide }) => {
             </div>
           </div>
         );
+      }
 
       default:
         return (

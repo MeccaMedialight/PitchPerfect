@@ -16,104 +16,67 @@ const LayoutPreviewPopup = ({ isOpen, onClose, layoutSlots, layoutName }) => {
         </div>
         
         <div className={styles.popupContent}>
-          <div className={styles.layoutPreviewContainer}>
-            {layoutSlots && layoutSlots.map((slot, index) => {
-              console.log('Slot data:', slot);
-              
-                             // Convert pixel values to percentages if needed
-               // The layout designer stores values in pixels, but we need percentages for display
-               const containerWidth = 736; // Match popup container width (800px - 4rem padding)
-               const containerHeight = 400; // Match popup container height
-              
-              let x = slot.position?.x || 0;
-              let y = slot.position?.y || 0;
-              let width = slot.size?.width || 30;
-              let height = slot.size?.height || 30;
-              
-              // If values are in pixels (large numbers), convert to percentages
-              if (width > 100) {
-                width = (width / containerWidth) * 100;
-              }
-              if (height > 100) {
-                height = (height / containerHeight) * 100;
-              }
-              if (x > 100) {
-                x = (x / containerWidth) * 100;
-              }
-              if (y > 100) {
-                y = (y / containerHeight) * 100;
-              }
-              
-              // Validate and clamp position/size values
-              x = Math.max(0, Math.min(100, x));
-              y = Math.max(0, Math.min(100, y));
-              width = Math.max(5, Math.min(100, width));
-              height = Math.max(5, Math.min(100, height));
-              
-              console.log('Calculated dimensions:', { x, y, width, height });
-              
-                            return (
+          <div className={styles.layoutPreviewContainer} style={{ borderWidth: 0, background: '#fff' }}>
+            {Array.isArray(layoutSlots) && layoutSlots.map((slot, index) => {
+              const baseWidth = 800; // match designer
+              const baseHeight = 600;
+              const pxX = slot.position?.x ?? 0;
+              const pxY = slot.position?.y ?? 0;
+              const pxW = slot.size?.width ?? 30;
+              const pxH = slot.size?.height ?? 30;
+              const xPct = Math.max(0, Math.min(100, (pxX / baseWidth) * 100));
+              const yPct = Math.max(0, Math.min(100, (pxY / baseHeight) * 100));
+              const wPct = Math.max(0, Math.min(100, (pxW / baseWidth) * 100));
+              const hPct = Math.max(0, Math.min(100, (pxH / baseHeight) * 100));
+              return (
                 <div
                   key={slot.id || index}
                   className={styles.layoutSlotPreview}
                   style={{
                     position: 'absolute',
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    width: `${width}%`,
-                    height: `${height}%`,
-                    border: '2px dashed #667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1rem',
-                    color: '#667eea',
-                    fontWeight: '500',
-                    zIndex: 1
+                    left: `${xPct}%`,
+                    top: `${yPct}%`,
+                    width: `${wPct}%`,
+                    height: `${hPct}%`,
+                    zIndex: index + 1
                   }}
                 >
-                  <div className={styles.slotInfo}>
-                    <div className={styles.slotType}>{slot.type}</div>
-                    <div className={styles.slotDimensions}>
-                      {Math.round(width)}% × {Math.round(height)}%
-                    </div>
-                    {slot.content && (
-                      <div className={styles.slotContentPreview}>
-                        {slot.type === 'image' ? (
-                          <img src={slot.content} alt="Content" style={{ maxWidth: '100%', maxHeight: '60px', objectFit: 'cover' }} />
-                        ) : slot.type === 'video' ? (
-                          <div style={{ fontSize: '0.8rem', color: '#666' }}>Video: {slot.content.substring(0, 30)}...</div>
-                        ) : slot.type === 'text' ? (
-                          <div style={{ fontSize: '0.8rem', color: '#666', maxHeight: '40px', overflow: 'hidden' }}>
-                            {slot.content.substring(0, 40)}{slot.content.length > 40 ? '...' : ''}
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
+                  {slot.type === 'image' && slot.content && (
+                    <img
+                      src={slot.content}
+                      alt="Content"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: slot.objectFit || 'cover',
+                        borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                        border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none'
+                      }}
+                    />
+                  )}
+                  {slot.type === 'video' && slot.content && (
+                    <video controls autoPlay={!!slot.autoplay} muted={!!slot.muted} style={{ width: '100%', height: '100%' }}>
+                      <source src={slot.content} type="video/mp4" />
+                    </video>
+                  )}
+                  {slot.type === 'text' && (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        overflow: 'hidden',
+                        textAlign: 'left',
+                        padding: `${slot.padding || 0}px`,
+                        background: slot.backgroundColor || 'transparent',
+                        borderRadius: slot.borderRadius ? `${slot.borderRadius}px` : '0',
+                        border: slot.borderWidth ? `${slot.borderWidth}px solid ${slot.borderColor || '#000000'}` : 'none'
+                      }}
+                      dangerouslySetInnerHTML={{ __html: slot.content || '' }}
+                    />
+                  )}
                 </div>
               );
             })}
-          </div>
-          
-          <div className={styles.layoutInfo}>
-            <h4>Layout Information</h4>
-            <div className={styles.infoGrid}>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Total Slots:</span>
-                <span className={styles.infoValue}>{layoutSlots?.length || 0}</span>
-              </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Slot Types:</span>
-                <span className={styles.infoValue}>
-                  {layoutSlots ? 
-                    [...new Set(layoutSlots.map(slot => slot.type))].join(', ') : 
-                    'None'
-                  }
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
